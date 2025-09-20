@@ -58,6 +58,8 @@ class FixedResumeParser:
         skills = self._extract_skills_improved(text)
         projects = self._extract_projects(text)
         certifications = self._extract_certifications(text)
+        achievements = self._extract_achievements(text)
+        languages = self._extract_languages(text)
 
         processing_time = time.time() - start_time
 
@@ -68,8 +70,11 @@ class FixedResumeParser:
             'Skills': skills,
             'Projects': projects,
             'Certifications': certifications,
+            'Achievements': achievements,
+            'Languages': languages,
             'ProcessingTime': processing_time,
-            'QualityScore': self._calculate_quality_score(contact_info, experience, education, skills)
+            'QualityScore': self._calculate_quality_score(contact_info, experience, education, skills),
+            'ExperienceMonths': self._calculate_total_experience_months(experience)
         }
 
     def _extract_contact_info(self, text: str, filename: str = "") -> Dict[str, Any]:
@@ -151,12 +156,32 @@ class FixedResumeParser:
         # Extract location (look for City, State pattern in first 1000 chars - contact section)
         location = {"Municipality": "", "Region": "", "CountryCode": "US"}
         # Search in the first part of the resume where contact info typically appears
-        contact_section = text[:1000]
-        # More flexible pattern to match "Austin, Tx" or "Austin, TX"
-        location_match = re.search(r'([A-Z][a-z]+),\s*([A-Z][a-z]?)', contact_section)
-        if location_match:
-            location["Municipality"] = location_match.group(1)
-            location["Region"] = location_match.group(2)
+        contact_section = text[:500]  # Reduced to avoid false matches
+        # More flexible pattern to match "Austin, TX" or "Austin, Tx" - but only in address context
+        location_patterns = [
+            r'\b([A-Z][a-z]+),\s*([A-Z]{2})\b',  # City, STATE format
+            r'\b([A-Z][a-z\s]+),\s*([A-Z]{2})\s*\d{5}',  # City, STATE ZIP format
+        ]
+
+        for pattern in location_patterns:
+            location_match = re.search(pattern, contact_section)
+            if location_match:
+                city = location_match.group(1)
+                state = location_match.group(2)
+
+                # Validate that this looks like a real location (not false match like "Python, Re")
+                if len(city) > 2 and state.isupper() and len(state) == 2:
+                    # Skip if city contains programming terms
+                    programming_terms = ['python', 'java', 'react', 'angular', 'node', 'javascript', 'html', 'css']
+
+                    # Skip if state is not a valid US state code
+                    valid_states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC']
+
+                    if (not any(term in city.lower() for term in programming_terms) and
+                        state in valid_states):
+                        location["Municipality"] = city
+                        location["Region"] = state
+                        break
 
         return {
             'CandidateName': {
@@ -227,7 +252,7 @@ class FixedResumeParser:
                 continue
 
             # Detect education section end
-            if in_education_section and re.match(r'^(Skills|Experience|Certifications|Projects|Professional|Work|Employment)', line_clean, re.IGNORECASE):
+            if in_education_section and re.match(r'^(.*Skills|.*Experience|Certifications|Projects|Professional|Work|Employment)', line_clean, re.IGNORECASE):
                 in_education_section = False
                 continue
 
@@ -237,32 +262,82 @@ class FixedResumeParser:
                 if any(cert_keyword in line_clean.upper() for cert_keyword in ['PMP', 'CERTIFIED', 'SCRUM', 'CISSP', 'CISM', 'CISA', 'CRISC']):
                     continue
 
-                # Pattern: "BSc, Computer Systems, City University of New York, NY"
-                if re.search(r'(BSc|MSc|BA|MA|BS|MS|PhD|MBA|Bachelor|Master)', line_clean, re.IGNORECASE):
-                    degree_match = re.search(r'(BSc|MSc|BA|MA|BS|MS|PhD|MBA|Bachelor[^,]*|Master[^,]*),?\s*([^,]*),?\s*(.*)', line_clean, re.IGNORECASE)
-                    if degree_match:
-                        degree_name = degree_match.group(1).strip()
-                        field = degree_match.group(2).strip() if degree_match.group(2) else ""
-                        school_info = degree_match.group(3).strip() if degree_match.group(3) else ""
+                # Skip coursework lines (not actual degrees)
+                if any(coursework_keyword in line_clean.lower() for coursework_keyword in ['relevant coursework:', 'coursework:', 'courses:', 'gpa:', 'databases:', 'programming languages:', 'web technologies:', 'cloud & devops:', 'other:']):
+                    continue
 
-                        # Clean up the degree name
-                        if field and not field.lower() in ['computer', 'university', 'college']:
-                            degree_name = f"{degree_name} {field}"
+                # Skip technical skills section lines
+                if re.match(r'^(Programming Languages:|Web Technologies:|Databases:|Cloud|Other:|Technologies:)', line_clean, re.IGNORECASE):
+                    continue
+
+                # Pattern: "BSc, Computer Systems, City University of New York, NY" or "Bachelor of Science in Computer Science"
+                # Only match at start of line to avoid partial matches from skills sections
+                if re.match(r'^(BSc|MSc|BA|MA|BS|MS|PhD|MBA|Bachelor|Master)', line_clean, re.IGNORECASE):
+                    # Handle "Bachelor of Science in Computer Science" format first
+                    full_degree_match = re.match(r'^(Bachelor of Science|Bachelor of Arts|Master of Science|Master of Arts|Bachelor|Master)(\s+in\s+(.+?))?\s*$', line_clean, re.IGNORECASE)
+                    if full_degree_match:
+                        degree_type = full_degree_match.group(1).strip()
+                        field = full_degree_match.group(3).strip() if full_degree_match.group(3) else ""
+
+                        # Create degree name
+                        if field and len(field) > 2 and not any(exclude in field.lower() for exclude in ['university', 'college', 'institute', '|', 'gpa', 'relevant']):
+                            degree_name = f"{degree_type} in {field}".strip()
+                        else:
+                            degree_name = degree_type
+
+                        # Look for school in next lines (for both cases)
+                        school_name = ""
+                        for j in range(i + 1, min(i + 3, len(lines))):
+                            next_line = lines[j].strip()
+                            if any(keyword in next_line.lower() for keyword in ['university', 'college', 'institute']) and '|' in next_line:
+                                school_name = next_line.split('|')[0].strip()
+                                break
+                            elif any(keyword in next_line.lower() for keyword in ['university', 'college', 'institute']):
+                                school_name = next_line
+                                break
+
+                        # Extract dates from the line or nearby lines
+                        start_date, end_date, dates_text = self._extract_education_dates(line_clean, lines, i)
 
                         education.append({
-                            'School': {'Name': school_info},
+                            'School': {'Name': school_name},
                             'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                            'Dates': '',
-                            'StartDate': '',
-                            'EndDate': '',
+                            'Dates': dates_text,
+                            'StartDate': start_date,
+                            'EndDate': end_date,
                             'GPA': ''
                         })
+                    else:
+                        # Handle comma-separated format: "BSc, Computer Systems, City University of New York, NY"
+                        degree_match = re.match(r'^(BSc|MSc|BA|MA|BS|MS|PhD|MBA|Bachelor[^,]*|Master[^,]*),?\s*([^,]*),?\s*(.*)', line_clean, re.IGNORECASE)
+                        if degree_match:
+                            degree_name = degree_match.group(1).strip()
+                            field = degree_match.group(2).strip() if degree_match.group(2) else ""
+                            school_info = degree_match.group(3).strip() if degree_match.group(3) else ""
 
-        # Strategy 3: Look for standalone degree lines throughout text
-        for i, line in enumerate(lines):
-            line_clean = line.strip()
-            if not line_clean or line_clean in [line.strip() for edu in education for edu in [edu.get('Degree', {}).get('Name', '')]]:
-                continue
+                            # Clean up the degree name
+                            if field and not field.lower() in ['computer', 'university', 'college']:
+                                degree_name = f"{degree_name} {field}"
+
+                            # Extract dates from the line or nearby lines
+                            start_date, end_date, dates_text = self._extract_education_dates(line_clean, lines, i)
+
+                            education.append({
+                                'School': {'Name': school_info},
+                                'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
+                                'Dates': dates_text,
+                                'StartDate': start_date,
+                                'EndDate': end_date,
+                                'GPA': ''
+                            })
+
+        # Strategy 3: DISABLED - was causing false positives like "ms Database Systems" from coursework
+        # The above Strategies 1 and 2 are sufficient for most resume formats
+        if False:  # Completely disable Strategy 3
+            for i, line in enumerate(lines):
+                line_clean = line.strip()
+                if not line_clean or line_clean in [line.strip() for edu in education for edu in [edu.get('Degree', {}).get('Name', '')]]:
+                    continue
 
             # Pattern: "Bachelors in computer science & engineering, Acharya Nagarjuna University, India"
             if re.search(r'^(Bachelors?|Masters?|Executive MBA|MBA)\s+in\s+.*,\s+.*University', line_clean, re.IGNORECASE):
@@ -281,158 +356,12 @@ class FixedResumeParser:
                         'EndDate': '',
                         'GPA': ''
                     })
-                    continue
 
-            # Pattern: "Master of Computer Applications (MCA) with 78% from Sri Kirshnadevaraya University"
-            elif re.search(r'(Master of|Bachelor of|PhD in|PHD in)\s+.*\s+(from|at)\s+.*University', line_clean, re.IGNORECASE):
-                degree_match = re.search(r'(Master of|Bachelor of|PhD in|PHD in)\s+(.*?)\s+(?:with.*?)?\s*(?:from|at)\s+(.*)', line_clean, re.IGNORECASE)
-                if degree_match:
-                    degree_type = degree_match.group(1).strip()
-                    field = degree_match.group(2).strip()
-                    school = degree_match.group(3).strip()
-
-                    degree_name = f"{degree_type} {field}"
-                    education.append({
-                        'School': {'Name': school},
-                        'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                        'Dates': '',
-                        'StartDate': '',
-                        'EndDate': '',
-                        'GPA': ''
-                    })
-                    continue
-
-            # Pattern: "Master of Science in Cybersecurity with a concentration in cyber intelligence"
-            elif re.search(r'^(Master of Science|Master of Business Administration|Bachelor of|PhD|PHD)\s+.*', line_clean, re.IGNORECASE):
-                degree_match = re.search(r'^(Master of Science|Master of Business Administration|Bachelor of[^,]*|PhD|PHD)\s*(.*?)(?:\s+with.*)?$', line_clean, re.IGNORECASE)
-                if degree_match:
-                    degree_base = degree_match.group(1).strip()
-                    field = degree_match.group(2).strip() if degree_match.group(2) else ""
-
-                    degree_name = f"{degree_base} {field}".strip()
-
-                    # Look for school in next lines
-                    school_name = ""
-                    for j in range(i + 1, min(i + 3, len(lines))):
-                        next_line = lines[j].strip()
-                        if any(keyword in next_line.lower() for keyword in ['university', 'college', 'institute']):
-                            school_name = next_line
-                            break
-
-                    education.append({
-                        'School': {'Name': school_name},
-                        'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                        'Dates': '',
-                        'StartDate': '',
-                        'EndDate': '',
-                        'GPA': ''
-                    })
-                    continue
-
-            # Pattern: Standalone degree types "PHD in Corporate Innovation and Entrepreneurship"
-            elif re.search(r'^(PHD|PhD|Master|Bachelor)\s+in\s+.*', line_clean, re.IGNORECASE):
-                degree_match = re.search(r'^(PHD|PhD|Master|Bachelor)\s+in\s+(.*)', line_clean, re.IGNORECASE)
-                if degree_match:
-                    degree_type = degree_match.group(1)
-                    field = degree_match.group(2).strip()
-
-                    degree_name = f"{degree_type} in {field}"
-
-                    # Look for school in next lines
-                    school_name = ""
-                    for j in range(i + 1, min(i + 4, len(lines))):
-                        next_line = lines[j].strip()
-                        if any(keyword in next_line.lower() for keyword in ['university', 'college', 'institute']) and not next_line.startswith('Ø'):
-                            school_name = next_line
-                            break
-
-                    education.append({
-                        'School': {'Name': school_name},
-                        'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                        'Dates': '',
-                        'StartDate': '',
-                        'EndDate': '',
-                        'GPA': ''
-                    })
-
-        # Strategy 4: Roman numeral format (Ahmad's format)
-        in_education_section = False
-        for i, line in enumerate(lines):
-            line_clean = line.strip()
-
-            # Detect start of Education section
-            if re.match(r'^Education\s*$', line_clean, re.IGNORECASE):
-                in_education_section = True
-                continue
-
-            # Detect end of Education section
-            if in_education_section and re.match(r'^(Certificates?|Skills|Management|IT\s+Skills)', line_clean, re.IGNORECASE):
-                break
-
-            if in_education_section and line_clean:
-                # Ahmad's format: "I. Bachelor's Degree of Computer Engineering"
-                if re.match(r'[IVX]+\.\s*(Bachelor|Master)', line_clean, re.IGNORECASE):
-                    degree_match = re.search(r'[IVX]+\.\s*(.*)', line_clean)
-                    if degree_match:
-                        degree_name = degree_match.group(1).strip()
-
-                        # Look for school in next few lines
-                        school_name = ""
-                        dates = ""
-                        for j in range(i + 1, min(i + 4, len(lines))):
-                            next_line = lines[j].strip()
-                            if not next_line:
-                                continue
-                            if any(keyword in next_line for keyword in ['University', 'School', 'College', 'Institute']):
-                                school_match = re.match(r'^(.*?)\s*\((\d{4})\)$', next_line)
-                                if school_match:
-                                    school_name = school_match.group(1).strip()
-                                    dates = school_match.group(2).strip()
-                                else:
-                                    school_name = next_line
-                                break
-
-                        education.append({
-                            'School': {'Name': school_name},
-                            'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                            'Dates': dates,
-                            'StartDate': '',
-                            'EndDate': '',
-                            'GPA': ''
-                        })
-
-        # Strategy 5: ZAMEN's format - school name on one line, degree on next line
-        for i, line in enumerate(lines):
-            line_clean = line.strip()
-
-            # Look for university/college names followed by degree info
-            if re.search(r'University.*–.*USA', line_clean, re.IGNORECASE) or re.search(r'University.*,.*UK', line_clean, re.IGNORECASE):
-                school_name = line_clean
-
-                # Check next lines for degree information
-                for j in range(i + 1, min(i + 4, len(lines))):
-                    next_line = lines[j].strip()
-                    if re.search(r'(Master of Business Administration|Bachelor of Computer Science|MBA)', next_line, re.IGNORECASE):
-                        degree_match = re.search(r'(Master of Business Administration|Bachelor of Computer Science|MBA)[^–]*', next_line, re.IGNORECASE)
-                        if degree_match:
-                            degree_name = degree_match.group(0).strip()
-
-                            # Check if this degree is already in our list
-                            already_exists = any(edu.get('Degree', {}).get('Name', '').lower() == degree_name.lower() for edu in education)
-                            if not already_exists:
-                                education.append({
-                                    'School': {'Name': school_name},
-                                    'Degree': {'Name': degree_name, 'Type': self._classify_degree_type(degree_name)},
-                                    'Dates': '',
-                                    'StartDate': '',
-                                    'EndDate': '',
-                                    'GPA': ''
-                                })
-                            break
+        # All Strategy 3 patterns are now disabled - no more education extraction beyond Strategies 1 & 2
 
         # Remove duplicates based on degree name
-        seen_degrees = set()
         unique_education = []
+        seen_degrees = set()
         for edu in education:
             degree_name = edu.get('Degree', {}).get('Name', '')
             if degree_name and degree_name not in seen_degrees:
@@ -440,6 +369,96 @@ class FixedResumeParser:
                 unique_education.append(edu)
 
         return unique_education
+    def _extract_education_dates(self, line: str, lines: List[str], line_index: int) -> tuple[str, str, str]:
+        """Extract start date, end date, and date text from education line or nearby lines"""
+        start_date = ""
+        end_date = ""
+        dates_text = ""
+
+        # Common education date patterns
+        education_date_patterns = [
+            r'(\d{4})\s*[-–]\s*(\d{4})',  # 2018 – 2022
+            r'(\d{4})\s*[-–]\s*(Present|Current)',  # 2020 – Present
+            r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})\s*[-–]\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})',  # Jan 2018 – Dec 2022
+            r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\s*[-–]\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})',  # January 2018 – December 2022
+            r'\((\d{4})\)',  # (2022) - graduation year
+            r'(\d{4})\s*[-–]\s*\d{2}',  # 2018 – 22
+            r'Graduated\s+(\d{4})',  # Graduated 2022
+            r'Class\s+of\s+(\d{4})',  # Class of 2022
+            r'(\d{4})\s+graduate',  # 2022 graduate
+        ]
+
+        # First check the current line for dates
+        for pattern in education_date_patterns:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                if pattern == r'\((\d{4})\)':  # Single graduation year
+                    end_date = f"{match.group(1)}-12-31"
+                    start_date = f"{int(match.group(1))-4}-09-01"  # Assume 4-year degree
+                    dates_text = match.group(1)
+                elif pattern in [r'Graduated\s+(\d{4})', r'Class\s+of\s+(\d{4})', r'(\d{4})\s+graduate']:
+                    end_date = f"{match.group(1)}-12-31"
+                    start_date = f"{int(match.group(1))-4}-09-01"  # Assume 4-year degree
+                    dates_text = match.group(1)
+                elif len(match.groups()) >= 2:
+                    start_year = match.group(1) if match.group(1).isdigit() else match.group(2)
+                    if len(match.groups()) >= 4:
+                        end_year = match.group(4)
+                    else:
+                        end_part = match.group(2) if not match.group(1).isdigit() else match.group(3) if len(match.groups()) >= 3 else "Present"
+                        if end_part in ["Present", "Current"]:
+                            end_date = "Present"
+                        else:
+                            end_year = end_part if end_part.isdigit() else "2024"
+                            end_date = f"{end_year}-12-31"
+
+                    if end_date != "Present":
+                        start_date = f"{start_year}-09-01"
+                    else:
+                        start_date = f"{start_year}-09-01"
+
+                    dates_text = match.group(0)
+                return start_date, end_date, dates_text
+
+        # Check nearby lines for dates (within 3 lines)
+        search_range = 3
+        for i in range(max(0, line_index - search_range), min(len(lines), line_index + search_range + 1)):
+            if i == line_index:
+                continue
+
+            nearby_line = lines[i].strip()
+            for pattern in education_date_patterns:
+                match = re.search(pattern, nearby_line, re.IGNORECASE)
+                if match:
+                    if pattern == r'\((\d{4})\)':
+                        end_date = f"{match.group(1)}-12-31"
+                        start_date = f"{int(match.group(1))-4}-09-01"
+                        dates_text = match.group(1)
+                    elif pattern in [r'Graduated\s+(\d{4})', r'Class\s+of\s+(\d{4})', r'(\d{4})\s+graduate']:
+                        end_date = f"{match.group(1)}-12-31"
+                        start_date = f"{int(match.group(1))-4}-09-01"
+                        dates_text = match.group(1)
+                    elif len(match.groups()) >= 2:
+                        start_year = match.group(1) if match.group(1).isdigit() else match.group(2)
+                        if len(match.groups()) >= 4:
+                            end_year = match.group(4)
+                        else:
+                            end_part = match.group(2) if not match.group(1).isdigit() else match.group(3) if len(match.groups()) >= 3 else "Present"
+                            if end_part in ["Present", "Current"]:
+                                end_date = "Present"
+                            else:
+                                end_year = end_part if end_part.isdigit() else "2024"
+                                end_date = f"{end_year}-12-31"
+
+                        if end_date != "Present":
+                            start_date = f"{start_year}-09-01"
+                        else:
+                            start_date = f"{start_year}-09-01"
+
+                        dates_text = match.group(0)
+                    return start_date, end_date, dates_text
+
+        return start_date, end_date, dates_text
 
     def _extract_experience_improved(self, text: str) -> List[Dict[str, Any]]:
         """Improved experience extraction with simplified, robust logic"""
@@ -724,15 +743,18 @@ class FixedResumeParser:
                     # Swap them
                     job_title, company = company, job_title
 
-                # Create new position
+                # Create new position with enhanced BRD-compliant structure
                 current_position = {
                     'JobTitle': job_title,
-                    'Company': company,
+                    'Employer': {'Name': company},
                     'Location': location,
                     'StartDate': self._parse_start_date(dates),
                     'EndDate': self._parse_end_date(dates),
                     'Dates': dates,
-                    'Description': []
+                    'Description': [],
+                    'IsCurrent': 'Present' in dates or 'Current' in dates,
+                    'JobCategory': self._classify_job_category(job_title),
+                    'JobLevel': self._classify_job_level(job_title)
                 }
                 i = j  # Continue from where we left off
             else:
@@ -742,7 +764,49 @@ class FixedResumeParser:
         if current_position:
             positions.append(current_position)
 
+        # Post-process positions to combine descriptions and add BRD compliance
+        for position in positions:
+            if position.get('Description') and isinstance(position['Description'], list):
+                # Join descriptions with proper formatting, preserving as-is without adding breaks
+                position['Description'] = ' '.join(position['Description'])
+            else:
+                position['Description'] = position.get('Description', '')
+
         return positions
+
+    def _classify_job_category(self, job_title: str) -> str:
+        """Classify job category based on title"""
+        if not job_title:
+            return 'Other'
+
+        title_lower = job_title.lower()
+
+        if any(keyword in title_lower for keyword in ['software', 'developer', 'engineer', 'programmer', 'architect']):
+            return 'Software Development'
+        elif any(keyword in title_lower for keyword in ['manager', 'director', 'lead', 'supervisor']):
+            return 'Management'
+        elif any(keyword in title_lower for keyword in ['analyst', 'consultant', 'advisor']):
+            return 'Consulting'
+        elif any(keyword in title_lower for keyword in ['sales', 'marketing', 'business']):
+            return 'Sales & Marketing'
+        else:
+            return 'Other'
+
+    def _classify_job_level(self, job_title: str) -> str:
+        """Classify job level based on title"""
+        if not job_title:
+            return 'Mid-Level'
+
+        title_lower = job_title.lower()
+
+        if any(keyword in title_lower for keyword in ['senior', 'sr.', 'lead', 'principal', 'staff']):
+            return 'Senior'
+        elif any(keyword in title_lower for keyword in ['junior', 'jr.', 'associate', 'entry']):
+            return 'Junior'
+        elif any(keyword in title_lower for keyword in ['director', 'vp', 'vice president', 'chief', 'head']):
+            return 'Executive'
+        else:
+            return 'Mid-Level'
 
     def _is_job_title_line(self, line: str) -> bool:
         """Check if a line looks like a job title"""
@@ -1014,7 +1078,7 @@ class FixedResumeParser:
                         next_line = lines[j].strip()
 
                         # Stop at next major section
-                        if re.match(r'(?i)^(Experience|Education|Projects|Certifications|References|Contact|Summary)\s*$', next_line):
+                        if re.match(r'(?i)^(Experience|Professional Experience|Education|Projects|Certifications|References|Contact|Summary)\s*$', next_line):
                             break
                         # Stop at another skills-like header
                         elif any(re.match(pattern, next_line) for pattern in skills_headers):
@@ -1049,6 +1113,10 @@ class FixedResumeParser:
                                 'confidence': 0.95
                             })
 
+        # Handle table-format skills (categories followed by skills)
+        elif self._is_table_format_skills(section_text):
+            skills.extend(self._parse_table_format_skills(section_text))
+
         # Handle comma-separated skills
         elif ',' in section_text:
             skill_items = [s.strip() for s in section_text.replace('\n', ',').split(',')]
@@ -1072,6 +1140,115 @@ class FixedResumeParser:
                         'name': line,
                         'source': 'skills_section',
                         'confidence': 0.85
+                    })
+
+        return skills
+
+    def _is_table_format_skills(self, section_text: str) -> bool:
+        """Check if this is a table-format skills section"""
+        lines = section_text.split('\n')
+        category_lines = 0
+
+        # Look for category headers (lines that don't contain commas and are not all caps skills)
+        for line in lines:
+            line = line.strip()
+            if line and not ',' in line and len(line.split()) <= 4:
+                # Could be a category header like "Big Data Technologies"
+                if not line.isupper() or ' ' in line:
+                    category_lines += 1
+
+        # If we have at least 2 potential category lines, this is likely table format
+        return category_lines >= 2
+
+    def _parse_table_format_skills(self, section_text: str) -> List[Dict[str, Any]]:
+        """Parse table-format skills where categories are followed by skills"""
+        skills = []
+        lines = section_text.split('\n')
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+
+            # Skip empty lines
+            if not line:
+                i += 1
+                continue
+
+            # Check if this looks like a category header (no commas, short)
+            if ',' not in line and len(line.split()) <= 4:
+                # This is likely a category, skip it but remember it for context
+                category = line
+                i += 1
+
+                # Look for skills on the next lines
+                while i < len(lines):
+                    skill_line = lines[i].strip()
+                    if not skill_line:
+                        i += 1
+                        continue
+
+                    # If next line has no commas and looks like another category, break
+                    if ',' not in skill_line and len(skill_line.split()) <= 4:
+                        break
+
+                    # Parse skills from this line - handle compound skills properly
+                    parsed_skills = self._parse_skill_line_smart(skill_line)
+                    skills.extend(parsed_skills)
+                    i += 1
+                    break  # Move to next category after processing one skills line
+            else:
+                # This line itself contains skills
+                parsed_skills = self._parse_skill_line_smart(line)
+                skills.extend(parsed_skills)
+                i += 1
+
+        return skills
+
+    def _parse_skill_line_smart(self, line: str) -> List[Dict[str, Any]]:
+        """Intelligently parse a line of skills, handling compound skills with parentheses"""
+        skills = []
+
+        try:
+            # First, handle compound skills with parentheses
+            # Find patterns like "Apache Hadoop (HDFS, MapReduce, YARN)"
+            compound_pattern = r'([^,()]+\([^)]+\))'
+            compounds = re.findall(compound_pattern, line)
+
+            # Remove compound skills from the line to avoid double processing
+            remaining_line = line
+            for compound in compounds:
+                remaining_line = remaining_line.replace(compound, '')
+                # Add the compound skill as a whole
+                skill_name = compound.strip()
+                if skill_name and len(skill_name) > 1:
+                    skills.append({
+                        'name': skill_name,
+                        'source': 'skills_section',
+                        'confidence': 0.95
+                    })
+
+            # Now process the remaining simple skills
+            remaining_skills = [s.strip() for s in remaining_line.split(',')]
+            for skill in remaining_skills:
+                skill = skill.strip()
+                if skill and len(skill) > 1 and skill not in [s['name'] for s in skills]:
+                    skills.append({
+                        'name': skill,
+                        'source': 'skills_section',
+                        'confidence': 0.9
+                    })
+
+        except re.error as e:
+            # Fallback to simple comma-split if regex fails
+            logger.warning(f"Regex error in skill parsing: {e}, falling back to simple parsing")
+            simple_skills = [s.strip() for s in line.split(',')]
+            for skill in simple_skills:
+                skill = skill.strip()
+                if skill and len(skill) > 1:
+                    skills.append({
+                        'name': skill,
+                        'source': 'skills_section',
+                        'confidence': 0.8
                     })
 
         return skills
@@ -1296,6 +1473,137 @@ class FixedResumeParser:
                     })
 
         return certifications
+
+    def _extract_achievements(self, text: str) -> List[str]:
+        """Extract achievements from resume"""
+        achievements = []
+        lines = text.split('\n')
+
+        # Look for achievements section
+        in_achievements_section = False
+
+        for line in lines:
+            line_clean = line.strip()
+
+            # Detect achievements section start
+            if re.match(r'^(Achievements?|Awards?|Accomplishments?|Honors?)\s*:?\s*$', line_clean, re.IGNORECASE):
+                in_achievements_section = True
+                continue
+
+            # Detect section end
+            if in_achievements_section and re.match(r'^(Education|Experience|Skills|Certifications|Projects)', line_clean, re.IGNORECASE):
+                break
+
+            if in_achievements_section and line_clean:
+                # Remove bullet points and add to achievements
+                achievement = re.sub(r'^[-•*]\s*', '', line_clean)
+                if achievement and len(achievement) > 10:  # Filter out noise
+                    achievements.append(achievement)
+
+        # Also look for achievement patterns throughout the text
+        achievement_patterns = [
+            r'(Won|Received|Awarded|Achieved|Earned)\s+.*',
+            r'(Top|Best|Outstanding|Excellent)\s+.*performance.*',
+            r'\d+%\s+.*improvement.*',
+            r'Increased.*by\s+\d+%',
+            r'Reduced.*by\s+\d+%',
+            r'Saved.*\$[\d,]+',
+        ]
+
+        for pattern in achievement_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                if isinstance(match, tuple):
+                    match = ' '.join(match)
+                if match and len(match) > 10 and match not in achievements:
+                    achievements.append(match)
+
+        return achievements[:10]  # Limit to top 10 achievements
+
+    def _extract_languages(self, text: str) -> List[Dict[str, str]]:
+        """Extract languages from resume"""
+        languages = []
+
+        # Common language patterns
+        language_names = [
+            'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Chinese', 'Mandarin',
+            'Japanese', 'Korean', 'Arabic', 'Russian', 'Hindi', 'Bengali', 'Telugu', 'Tamil',
+            'Marathi', 'Gujarati', 'Punjabi', 'Urdu', 'Dutch', 'Swedish', 'Norwegian', 'Danish',
+            'Polish', 'Turkish', 'Hebrew', 'Thai', 'Vietnamese', 'Indonesian', 'Malay'
+        ]
+
+        # Look for languages section
+        lines = text.split('\n')
+        in_languages_section = False
+
+        for line in lines:
+            line_clean = line.strip()
+
+            # Detect languages section
+            if re.match(r'^(Languages?|Language\s+Skills?)\s*:?\s*$', line_clean, re.IGNORECASE):
+                in_languages_section = True
+                continue
+
+            # Detect section end
+            if in_languages_section and re.match(r'^(Education|Experience|Skills|Certifications|Projects)', line_clean, re.IGNORECASE):
+                break
+
+            if in_languages_section and line_clean:
+                # Parse language entries
+                for lang_name in language_names:
+                    if lang_name in line_clean:
+                        proficiency = 'Native'  # Default
+                        if 'fluent' in line_clean.lower() or 'native' in line_clean.lower():
+                            proficiency = 'Native'
+                        elif 'advanced' in line_clean.lower() or 'proficient' in line_clean.lower():
+                            proficiency = 'Advanced'
+                        elif 'intermediate' in line_clean.lower():
+                            proficiency = 'Intermediate'
+                        elif 'basic' in line_clean.lower() or 'beginner' in line_clean.lower():
+                            proficiency = 'Basic'
+
+                        languages.append({
+                            'Name': lang_name,
+                            'Proficiency': proficiency
+                        })
+
+        # Also search for language mentions throughout text
+        for lang_name in language_names:
+            if lang_name in text and not any(lang['Name'] == lang_name for lang in languages):
+                languages.append({
+                    'Name': lang_name,
+                    'Proficiency': 'Intermediate'  # Default assumption
+                })
+
+        return languages[:5]  # Limit to top 5 languages
+
+    def _calculate_total_experience_months(self, positions: List[Dict]) -> int:
+        """Calculate total experience in months"""
+        total_months = 0
+
+        for position in positions:
+            start_date = position.get('StartDate', '')
+            end_date = position.get('EndDate', '')
+
+            if start_date and end_date:
+                try:
+                    if end_date == 'Present':
+                        end_date = '2024-12-31'  # Assume current date
+
+                    # Parse dates (assume YYYY-MM-DD format)
+                    start_parts = start_date.split('-')
+                    end_parts = end_date.split('-')
+
+                    if len(start_parts) >= 2 and len(end_parts) >= 2:
+                        start_year, start_month = int(start_parts[0]), int(start_parts[1])
+                        end_year, end_month = int(end_parts[0]), int(end_parts[1])
+
+                        months = (end_year - start_year) * 12 + (end_month - start_month)
+                        total_months += max(months, 1)  # At least 1 month
+                except:
+                    total_months += 12  # Assume 1 year if parsing fails
+
+        return total_months
 
     def _enhance_positions_with_dates(self, positions, text):
         """Post-process positions to find missing dates from standalone date lines"""

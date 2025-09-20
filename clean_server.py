@@ -12,7 +12,9 @@ import time
 import uuid
 import logging
 from fixed_resume_parser import FixedResumeParser
-from fixed_server import extract_text_from_file
+import fitz  # PyMuPDF
+import docx
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,6 +34,39 @@ def allowed_file(filename):
 
 def generate_transaction_id():
     return str(uuid.uuid4())[:8]
+
+def extract_text_from_file(file_path, filename):
+    """Extract text from uploaded file"""
+    try:
+        file_ext = Path(filename).suffix.lower()
+
+        if file_ext == '.pdf':
+            doc = fitz.open(file_path)
+            text = ""
+            for page in doc:
+                text += page.get_text()
+            doc.close()
+            return text
+
+        elif file_ext in ['.docx', '.doc']:
+            try:
+                doc = docx.Document(file_path)
+                text = ""
+                for paragraph in doc.paragraphs:
+                    text += paragraph.text + "\n"
+                return text
+            except Exception:
+                return f"Could not extract text from {filename}"
+
+        elif file_ext == '.txt':
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return f.read()
+
+        else:
+            return "Unsupported file format"
+
+    except Exception as e:
+        return f"Error extracting text: {str(e)}"
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
