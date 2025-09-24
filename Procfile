@@ -1,0 +1,1 @@
+web: python clean_server.py

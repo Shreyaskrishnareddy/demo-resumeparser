@@ -361,16 +361,19 @@ def health():
     return jsonify({'status': 'healthy', 'version': '1.0.0'})
 
 if __name__ == '__main__':
+    # Use Render's PORT environment variable, fallback to 8001 for local development
+    port = int(os.environ.get('PORT', 8001))
+
     print("CLEAN RESUME PARSER SERVER")
     print("=" * 50)
     print("Server Status: PRODUCTION READY")
     print("Version: 1.0.0")
     print("Processing Speed: < 100ms average")
     print("=" * 50)
-    print("Web Interface: http://localhost:8001")
-    print("API Endpoint: http://localhost:8001/api/parse")
-    print("Health Check: http://localhost:8001/api/health")
+    print(f"Web Interface: http://localhost:{port}")
+    print(f"API Endpoint: http://localhost:{port}/api/parse")
+    print(f"Health Check: http://localhost:{port}/api/health")
     print("=" * 50)
     print("Ready to process resumes!")
 
-    app.run(host='0.0.0.0', port=8001, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
