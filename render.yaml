@@ -4,9 +4,9 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: python clean_server.py
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18
+        value: 3.11.6
     healthCheckPath: /api/health

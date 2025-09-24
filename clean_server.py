@@ -12,7 +12,13 @@ import time
 import uuid
 import logging
 from fixed_resume_parser import FixedResumeParser
-import fitz  # PyMuPDF
+try:
+    import fitz  # PyMuPDF
+    PYMUPDF_AVAILABLE = True
+except ImportError:
+    PYMUPDF_AVAILABLE = False
+    print("Warning: PyMuPDF not available, using fallback PDF processing")
+
 import docx
 from pathlib import Path
 
@@ -41,12 +47,16 @@ def extract_text_from_file(file_path, filename):
         file_ext = Path(filename).suffix.lower()
 
         if file_ext == '.pdf':
-            doc = fitz.open(file_path)
-            text = ""
-            for page in doc:
-                text += page.get_text()
-            doc.close()
-            return text
+            if PYMUPDF_AVAILABLE:
+                doc = fitz.open(file_path)
+                text = ""
+                for page in doc:
+                    text += page.get_text()
+                doc.close()
+                return text
+            else:
+                # Fallback: return a message for PDF files when PyMuPDF is not available
+                return "PDF processing temporarily unavailable. Please try with a DOCX or TXT file."
 
         elif file_ext in ['.docx', '.doc']:
             try:
