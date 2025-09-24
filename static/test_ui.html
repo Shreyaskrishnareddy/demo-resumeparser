@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .endpoint-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .endpoint-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Resume Parser API Test Interface</h1>
+
+        <!-- Health Check Section -->
+        <div class="endpoint-section">
+            <div class="endpoint-title">Health Check</div>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <div id="healthResult"></div>
+        </div>
+
+        <!-- Parse Resume Section -->
+        <div class="endpoint-section">
+            <div class="endpoint-title">Parse Resume</div>
+            <div class="form-group">
+                <label for="inputSource">Input Source Directory:</label>
+                <input type="text" id="inputSource" value="/home/great/claudeprojects/parser/test_resumes/Test Resumes">
+            </div>
+            <div class="form-group">
+                <label for="filename">Resume Filename:</label>
+                <input type="text" id="filename" value="Ahmad Qasem-Resume.pdf">
+            </div>
+            <div class="form-group">
+                <label for="format">File Format:</label>
+                <select id="format">
+                    <option value=".pdf">.pdf</option>
+                    <option value=".doc">.doc</option>
+                    <option value=".docx">.docx</option>
+                    <option value=".txt">.txt</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="outputLocation">Output Directory:</label>
+                <input type="text" id="outputLocation" value="/home/great/claudeprojects/parser/parserdemo/output">
+            </div>
+            <div class="form-group">
+                <label for="parserMode">Parser Mode:</label>
+                <select id="parserMode">
+                    <option value="balanced">Balanced</option>
+                    <option value="fast">Fast</option>
+                    <option value="full">Full</option>
+                </select>
+            </div>
+            <button onclick="parseResume()">Parse Resume</button>
+            <div id="parseResult"></div>
+        </div>
+
+        <!-- List Files Section -->
+        <div class="endpoint-section">
+            <div class="endpoint-title">List Files</div>
+            <div class="form-group">
+                <label for="directory">Directory to List:</label>
+                <input type="text" id="directory" value="/home/great/claudeprojects/parser/test_resumes/Test Resumes">
+            </div>
+            <button onclick="listFiles()">List Files</button>
+            <div id="listResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5555';
+
+        function showResult(elementId, content, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = content;
+            element.className = `result ${type}`;
+        }
+
+        function showLoading(elementId) {
+            showResult(elementId, 'Loading...', 'loading');
+        }
+
+        async function testHealth() {
+            showLoading('healthResult');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                showResult('healthResult', JSON.stringify(data, null, 2));
+            } catch (error) {
+                showResult('healthResult', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function parseResume() {
+            showLoading('parseResult');
+            try {
+                const requestBody = {
+                    input_source: document.getElementById('inputSource').value,
+                    parse_quantity: 'S',
+                    filename: document.getElementById('filename').value,
+                    format: document.getElementById('format').value,
+                    output_location: document.getElementById('outputLocation').value,
+                    parser_mode: document.getElementById('parserMode').value
+                };
+
+                const response = await fetch(`${API_BASE}/parse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('parseResult', `✅ Success!\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResult('parseResult', `❌ Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showResult('parseResult', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function listFiles() {
+            showLoading('listResult');
+            try {
+                const requestBody = {
+                    directory: document.getElementById('directory').value,
+                    filter_extensions: ['.pdf', '.doc', '.docx', '.txt']
+                };
+
+                const response = await fetch(`${API_BASE}/list-files`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showResult('listResult', `✅ Found ${data.count} files:\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResult('listResult', `❌ Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showResult('listResult', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test health on page load
+        window.onload = function() {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

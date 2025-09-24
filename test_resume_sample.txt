@@ -1,0 +1,40 @@
+John Smith
+Senior Software Engineer
+john.smith@email.com | (555) 123-4567 | linkedin.com/in/johnsmith
+
+PROFESSIONAL SUMMARY
+Experienced software engineer with 8+ years in full-stack development, cloud architecture, and team leadership. Proven track record of delivering scalable solutions and mentoring junior developers.
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer | TechCorp Inc | 2020 - Present
+• Lead development of microservices architecture serving 1M+ users
+• Implemented CI/CD pipelines reducing deployment time by 60%
+• Mentor team of 5 junior developers
+• Technologies: Python, React, AWS, Docker, Kubernetes
+
+Software Engineer | StartupXYZ | 2018 - 2020  
+• Built real-time analytics dashboard used by 100+ enterprise clients
+• Optimized database queries improving performance by 40%
+• Collaborated with product team on feature requirements
+• Technologies: Node.js, MongoDB, Angular, Redis
+
+Junior Developer | WebSolutions Ltd | 2016 - 2018
+• Developed responsive web applications for small businesses
+• Fixed bugs and implemented feature requests
+• Participated in code reviews and agile development process
+• Technologies: JavaScript, HTML, CSS, MySQL
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+University of Technology | 2012 - 2016
+GPA: 3.7/4.0
+Relevant Coursework: Data Structures, Algorithms, Database Systems, Software Engineering
+
+TECHNICAL SKILLS
+Programming Languages: Python, JavaScript, Java, C++
+Web Technologies: React, Angular, Node.js, HTML/CSS
+Databases: PostgreSQL, MongoDB, Redis, MySQL
+Cloud & DevOps: AWS, Docker, Kubernetes, Jenkins, Git
+Other: Microservices, REST APIs, Agile/Scrum, Unit Testing

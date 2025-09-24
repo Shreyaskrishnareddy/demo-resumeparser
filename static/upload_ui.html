@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parser - Upload & Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        .upload-section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            text-align: center;
+            background-color: #fafafa;
+            transition: all 0.3s ease;
+        }
+        .upload-section:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        .upload-section.dragover {
+            border-color: #667eea;
+            background-color: #f0f2ff;
+        }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .file-input {
+            opacity: 0;
+            position: absolute;
+            z-index: -1;
+        }
+        .file-input-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .file-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .parse-button {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 10px;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .parse-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        .parse-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            text-align: center;
+        }
+        .health-status {
+            float: right;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .health-healthy {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .health-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .supported-formats {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        .summary-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        .summary-item {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .summary-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .summary-value {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="health-status" id="healthStatus">Checking...</div>
+
+        <h1>🚀 Resume Parser</h1>
+        <div class="subtitle">Upload your resume and get structured JSON output instantly</div>
+
+        <div class="upload-section" id="uploadSection">
+            <h3>📄 Upload Resume File</h3>
+            <p>Drag & drop your resume file here or click to browse</p>
+
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx,.txt">
+                <button class="file-input-button" onclick="document.getElementById('fileInput').click()">
+                    Choose Resume File
+                </button>
+            </div>
+
+            <div class="supported-formats">
+                Supported formats: PDF, DOC, DOCX, TXT (max 16MB)
+            </div>
+
+            <div id="fileInfo" class="file-info" style="display: none;"></div>
+
+            <button id="parseButton" class="parse-button" onclick="parseResume()">
+                Parse Resume Now
+            </button>
+        </div>
+
+        <div id="summaryBox" class="summary-box" style="display: none;">
+            <h4>📊 Parsing Summary</h4>
+            <div id="summaryContent"></div>
+        </div>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5566';
+        let selectedFile = null;
+
+        // Check health status on load
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                document.getElementById('healthStatus').textContent = '✅ Server Online';
+                document.getElementById('healthStatus').className = 'health-status health-healthy';
+            } catch (error) {
+                document.getElementById('healthStatus').textContent = '❌ Server Offline';
+                document.getElementById('healthStatus').className = 'health-status health-error';
+            }
+        }
+
+        // File input handlers
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+        // Drag and drop handlers
+        const uploadSection = document.getElementById('uploadSection');
+        uploadSection.addEventListener('dragover', handleDragOver);
+        uploadSection.addEventListener('dragleave', handleDragLeave);
+        uploadSection.addEventListener('drop', handleDrop);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            selectedFile = file;
+
+            // Validate file
+            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+            if (!allowedTypes.includes(fileExt)) {
+                showResult('❌ Unsupported file format. Please use PDF, DOC, DOCX, or TXT files.', 'error');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showResult('❌ File too large. Maximum size is 16MB.', 'error');
+                return;
+            }
+
+            // Show file info
+            document.getElementById('fileInfo').innerHTML = `
+                <strong>📁 Selected File:</strong><br>
+                Name: ${file.name}<br>
+                Size: ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                Type: ${fileExt.toUpperCase()}
+            `;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('parseButton').style.display = 'inline-block';
+        }
+
+        async function parseResume() {
+            if (!selectedFile) {
+                showResult('❌ Please select a file first.', 'error');
+                return;
+            }
+
+            showResult('🔄 Parsing resume, please wait...', 'loading');
+            document.getElementById('parseButton').disabled = true;
+            document.getElementById('summaryBox').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                const endTime = Date.now();
+                const clientProcessingTime = (endTime - startTime) / 1000;
+
+                if (response.ok) {
+                    // Show summary
+                    showSummary(data, clientProcessingTime);
+
+                    // Show full result
+                    showResult(`✅ Resume parsed successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Error: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Network Error: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('parseButton').disabled = false;
+            }
+        }
+
+        function showSummary(data, clientTime) {
+            if (!data.parsed_data) return;
+
+            const parsed = data.parsed_data;
+            const contact = parsed.ContactInformation || {};
+            const skills = parsed.Skills || [];
+            const education = parsed.Education || {};
+            const employment = parsed.EmploymentHistory || {};
+
+            const summaryContent = `
+                <div class="summary-item">
+                    <span class="summary-label">📄 File:</span>
+                    <span class="summary-value">${selectedFile.name}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">👤 Name:</span>
+                    <span class="summary-value">${contact.CandidateName?.FormattedName || 'Not detected'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">📧 Email:</span>
+                    <span class="summary-value">${contact.EmailAddresses?.[0]?.EmailAddress || 'Not detected'}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">🛠️ Skills Found:</span>
+                    <span class="summary-value">${skills.length} skills</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">🎓 Education:</span>
+                    <span class="summary-value">${education.EducationDetails?.length || 0} entries</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">💼 Work Experience:</span>
+                    <span class="summary-value">${employment.Positions?.length || 0} positions</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">⚡ Processing Time:</span>
+                    <span class="summary-value">${data.processing_time}s</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">🎯 Domain:</span>
+                    <span class="summary-value">${parsed.DomainClassification?.PrimaryDomain || 'Not classified'}</span>
+                </div>
+            `;
+
+            document.getElementById('summaryContent').innerHTML = summaryContent;
+            document.getElementById('summaryBox').style.display = 'block';
+        }
+
+        function showResult(content, type = 'success') {
+            const element = document.getElementById('result');
+            element.innerHTML = content;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        // Initialize
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html>
