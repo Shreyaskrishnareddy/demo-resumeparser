@@ -166,7 +166,7 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <h1>Resume Parser</h1>
-        <p class="subtitle">Parse resumes with 91% accuracy</p>
+        <p class="subtitle">Professional resume parsing solution</p>
 
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <div class="upload-icon">
@@ -358,13 +358,13 @@ def parse_resume():
 
 @app.route('/api/health')
 def health():
-    return jsonify({'status': 'healthy', 'accuracy': '91%'})
+    return jsonify({'status': 'healthy', 'version': '1.0.0'})
 
 if __name__ == '__main__':
     print("CLEAN RESUME PARSER SERVER")
     print("=" * 50)
     print("Server Status: PRODUCTION READY")
-    print("Accuracy Score: 91%")
+    print("Version: 1.0.0")
     print("Processing Speed: < 100ms average")
     print("=" * 50)
     print("Web Interface: http://localhost:8001")
