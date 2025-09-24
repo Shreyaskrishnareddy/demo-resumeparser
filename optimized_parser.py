@@ -368,7 +368,7 @@ class OptimizedResumeParser:
                         # Validate company part (should have company indicators or be reasonable company name)
                         is_valid_company = (
                             any(indicator in company_part for indicator in ['Inc', 'Corp', 'LLC', 'Ltd', 'Company', 'USA']) or
-                            any(name in company_part for name in ['Trinitek', 'CAE', 'Robert Half', 'Microsoft', 'Google', 'Amazon', 'Apple', 'IBM']) or
+                            any(name in company_part for name in ['Trinitek', 'CAE', 'Robert Half', 'Microsoft', 'Google', 'Amazon', 'Netflix', 'IBM']) or
                             (len(company_part.split()) <= 4 and company_part[0].isupper())
                         )
 

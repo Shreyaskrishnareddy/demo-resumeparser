@@ -1,25 +1,25 @@
-# 🚀 Enterprise Resume Parser
+# Enterprise Resume Parser
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Accuracy](https://img.shields.io/badge/Accuracy-97.7%25-brightgreen.svg)]()
 [![Performance](https://img.shields.io/badge/Processing-<100ms-orange.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **Production-ready resume parser with 97.7% accuracy and enterprise-grade features**
+**Production-ready resume parser with 97.7% accuracy and enterprise-grade features**
 
 A high-performance resume parsing system that extracts structured data from resumes in PDF, DOC, DOCX, and TXT formats. Built with modern web technologies and optimized for accuracy and speed.
 
-## ✨ Key Features
+## Key Features
 
-- **🎯 High Accuracy**: 97.7% average accuracy (100% on target files)
-- **⚡ Fast Processing**: Sub-100ms response times
-- **📄 Multi-Format Support**: PDF, DOC, DOCX, TXT files
-- **🌐 Modern UI**: Clean, responsive web interface
-- **🔗 REST API**: Standard JSON API for integration
-- **🛡️ Production Ready**: Comprehensive error handling and validation
-- **📊 BRD Compliant**: 100% Business Requirements Document compliance
+- **High Accuracy**: 97.7% average accuracy (100% on target files)
+- **Fast Processing**: Sub-100ms response times
+- **Multi-Format Support**: PDF, DOC, DOCX, TXT files
+- **Modern UI**: Clean, responsive web interface
+- **REST API**: Standard JSON API for integration
+- **Production Ready**: Comprehensive error handling and validation
+- **BRD Compliant**: 100% Business Requirements Document compliance
 
-## 🎯 What It Extracts
+## Data Extraction Capabilities
 
 ### Contact Information
 - Full name with proper formatting
@@ -46,7 +46,7 @@ A high-performance resume parsing system that extracts structured data from resu
 - Industry-specific keywords
 - Career progression analysis
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -83,7 +83,7 @@ A high-performance resume parsing system that extracts structured data from resu
    http://localhost:8001
    ```
 
-## 🔧 Server Options
+## Server Options
 
 Choose the server that best fits your needs:
 
@@ -94,7 +94,7 @@ Choose the server that best fits your needs:
 | `api_server.py` | 8000 | Pure API server for integrations |
 | `ultra_fast_api_server.py` | 8000 | High-performance API for bulk processing |
 
-## 📖 API Documentation
+## API Documentation
 
 ### Base URL
 ```
@@ -186,7 +186,7 @@ Content-Type: multipart/form-data
 }
 ```
 
-## 💻 Usage Examples
+## Usage Examples
 
 ### Web Interface
 1. Visit `http://localhost:8001`
@@ -218,7 +218,7 @@ result = parse_resume('resume.pdf')
 print(f"Candidate: {result['ContactInformation']['CandidateName']['FormattedName']}")
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Enterprise Resume Parser
@@ -236,12 +236,12 @@ Enterprise Resume Parser
 │   ├── production_server.py          # Production server
 │   └── api_server.py                # API-only server
 └── Testing & Validation
-    ├── comprehensive_accuracy_test.py
-    ├── brd_compliance_tester.py
+    ├── comprehensive_accuracy_validator.py
+    ├── comprehensive_content_validator.py
     └── performance_profiler.py
 ```
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 ### Accuracy Results
 - **Overall Accuracy**: 97.7%
@@ -258,11 +258,11 @@ Enterprise Resume Parser
 - **Memory Usage**: <50MB per request
 - **CPU Utilization**: <5% on modern hardware
 
-## 🧪 Testing
+## Testing
 
 ### Run Accuracy Tests
 ```bash
-python3 comprehensive_accuracy_test.py
+python3 comprehensive_accuracy_validator.py
 ```
 
 ### Run Performance Tests
@@ -270,12 +270,12 @@ python3 comprehensive_accuracy_test.py
 python3 simple_performance_analyzer.py
 ```
 
-### Run BRD Compliance Tests
+### Run Content Validation
 ```bash
-python3 brd_compliance_tester.py
+python3 comprehensive_content_validator.py
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 Create a `.env` file (optional):
@@ -296,7 +296,7 @@ The parser automatically handles:
 - **DOC/DOCX**: Using python-docx for document processing
 - **TXT**: Direct text processing with encoding detection
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Using Docker (Recommended)
 ```bash
@@ -323,7 +323,7 @@ sudo systemctl start resume-parser
 - **Azure**: Use Container Instances or App Service
 - **Heroku**: Ready for direct deployment
 
-## 🔒 Security Features
+## Security Features
 
 - File type validation and sanitization
 - Size limits and timeout protection
@@ -332,7 +332,7 @@ sudo systemctl start resume-parser
 - CORS protection for API endpoints
 - Request rate limiting (configurable)
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow these steps:
 
@@ -354,18 +354,18 @@ python3 -m pytest tests/
 flake8 --max-line-length=100 *.py
 ```
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🏆 Acknowledgments
+## Acknowledgments
 
 - Built with modern Python technologies
 - Optimized for production environments
 - Extensively tested with real-world resumes
 - Designed for enterprise integration
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Shreyaskrishnareddy/demo-resumeparser/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Shreyaskrishnareddy/demo-resumeparser/discussions)
@@ -373,6 +373,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for modern recruitment and HR technology**
+**Built for modern recruitment and HR technology**
 
-*Transforming resume processing with AI-powered accuracy and enterprise reliability.*
+*Transforming resume processing with enterprise reliability and accuracy.*

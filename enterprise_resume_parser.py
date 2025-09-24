@@ -544,7 +544,7 @@ class EnterpriseResumeParser:
             if experience_start == -1:
                 for i, line in enumerate(lines):
                     line_upper = line.strip().upper()
-                    known_companies = ['GOOGLE', 'MICROSOFT', 'AMAZON', 'FACEBOOK', 'APPLE', 'UNITED', 'PEPSI']
+                    known_companies = ['GOOGLE', 'MICROSOFT', 'AMAZON', 'FACEBOOK', 'NETFLIX', 'UNITED', 'PEPSI']
                     if any(company in line_upper for company in known_companies):
                         experience_start = max(0, i - 2)
                         break
@@ -619,7 +619,7 @@ class EnterpriseResumeParser:
 
         # Pattern 4: Known company names (enhanced)
         known_companies = [
-            'Google', 'Microsoft', 'Amazon', 'Facebook', 'Apple', 'Netflix', 'Tesla',
+            'Google', 'Microsoft', 'Amazon', 'Facebook', 'Netflix', 'Tesla', 'Adobe',
             'Uber', 'Airbnb', 'Spotify', 'LinkedIn', 'Twitter', 'Oracle', 'IBM',
             'Intel', 'Adobe', 'Salesforce', 'PayPal', 'eBay', 'Yahoo',
             'United Airlines', 'United Airline', 'PepsiCo', 'Pepsi'

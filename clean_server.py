@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Clean Apple-like Resume Parser Server
-Minimalistic design with 91% accuracy
+Clean Resume Parser Server
+Professional design with high accuracy parsing
 """
 
 from flask import Flask, request, jsonify, render_template_string
@@ -78,7 +78,7 @@ HTML_TEMPLATE = """
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            font-family: -system-ui, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f7; min-height: 100vh; color: #1d1d1f;
         }
         .container {
@@ -346,7 +346,7 @@ def parse_resume():
 
         # Add metadata
         result['success'] = True
-        result['textkernel_format'] = True
+        result['standard_format'] = True
         result['processing_time'] = time.time() - start_time
         result['transaction_id'] = generate_transaction_id()
 
