@@ -21,7 +21,7 @@ class FixedResumeParser:
 
     def __init__(self):
         self._init_patterns()
-        logger.info("🔧 Fixed Resume Parser initialized - SIMPLIFIED LOGIC v2.0")
+        logger.info("Fixed Resume Parser initialized - SIMPLIFIED LOGIC v2.0")
 
     def _init_patterns(self):
         """Initialize improved patterns"""
