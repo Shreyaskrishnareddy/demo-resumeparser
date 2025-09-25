@@ -171,6 +171,13 @@ HTML_TEMPLATE = """
         .stat-label {
             color: #86868b; font-size: 0.8rem; margin-top: 4px;
         }
+        .download-btn {
+            background: #007aff; color: white; border: none;
+            padding: 12px 24px; border-radius: 8px; font-size: 1rem;
+            font-weight: 500; cursor: pointer; margin: 16px 0;
+            transition: background 0.2s ease; display: block; width: 100%;
+        }
+        .download-btn:hover { background: #0056cc; }
     </style>
 </head>
 <body>
@@ -200,6 +207,7 @@ HTML_TEMPLATE = """
         <div class="results" id="resultsDiv">
             <div class="stats" id="statsDiv"></div>
             <div id="resultCards"></div>
+            <button class="download-btn" id="downloadBtn" onclick="downloadJSON()">📄 Download JSON</button>
             <div class="json-output" id="jsonOutput"></div>
         </div>
     </div>
@@ -269,7 +277,10 @@ HTML_TEMPLATE = """
             });
         }
 
+        let currentData = null; // Store current parsed data for download
+
         function displayResults(data) {
+            currentData = data; // Store data for download
             const statsDiv = document.getElementById('statsDiv');
             const resultCards = document.getElementById('resultCards');
             const jsonOutput = document.getElementById('jsonOutput');
@@ -316,6 +327,31 @@ HTML_TEMPLATE = """
             // Display JSON
             jsonOutput.textContent = JSON.stringify(data, null, 2);
             resultsDiv.style.display = 'block';
+        }
+
+        function downloadJSON() {
+            if (!currentData) {
+                alert('No data to download');
+                return;
+            }
+
+            // Create filename with timestamp
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace(/[:.]/g, '-');
+            const filename = `resume-parsed-${timestamp}.json`;
+
+            // Create blob and download
+            const jsonString = JSON.stringify(currentData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
