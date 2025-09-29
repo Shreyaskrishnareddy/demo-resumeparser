@@ -1909,10 +1909,26 @@ class FixedComprehensiveParser:
                     continue
 
                 # Clean up skill name
-                skill_name = skill_name.strip('.,;')
+                skill_name = skill_name.strip('.,;Ø')
 
                 # Skip if it looks like a description rather than a skill
                 if len(skill_name) > 100:
+                    continue
+
+                # Skip table headers and section titles (all caps and long, or ending with colon)
+                # But allow short acronyms like JIRA, MIRO, AWS, etc.
+                if (skill_name.isupper() and len(skill_name) > 4) or skill_name.endswith(':'):
+                    continue
+
+                # Skip years (just numbers)
+                if skill_name.strip().isdigit():
+                    continue
+
+                # Skip category headers
+                category_headers = ['CATEGORY', 'DESCRIPTION', 'APPLICATION SOFTWARE', 'TECHNICAL TOOLS',
+                                  'PROCESS MODELLING', 'DOCUMENTS & PROCESSES', 'STRATEGY ANALYSIS',
+                                  'RISK MANAGEMENT', 'CERTIFICATION', 'CERTIFICATIONS']
+                if skill_name.upper() in category_headers:
                     continue
 
                 # Skip descriptions/sentences (contain many common words)
@@ -1920,15 +1936,17 @@ class FixedComprehensiveParser:
                                'managing', 'implementing', 'optimizing', 'designing', 'creating',
                                'adept at', 'skilled in', 'proficient', 'experienced', 'expertise',
                                'leveraging', 'including', 'such as', 'effective', 'efficient',
-                               'robust', 'scalable', 'secure', 'seamless', 'advanced']
+                               'robust', 'scalable', 'secure', 'seamless', 'advanced', 'strategies', 'execution']
                 word_count = sum(1 for word in common_words if word in skill_name.lower())
                 if word_count >= 2 or len(skill_name.split()) > 6:
                     continue
 
-                # Skip generic phrases
+                # Skip generic phrases and certifications
                 skip_phrases = ['highly skilled', 'extensive experience', 'deep expertise',
                               'adept at', 'proficient in', 'experienced in', 'skilled in',
-                              'expert in', 'advanced skills', 'user-focused', 'well-managed']
+                              'expert in', 'advanced skills', 'user-focused', 'well-managed',
+                              'test plans', 'use cases', 'certified', 'certification', 'training',
+                              'foundation –', 'master –']
                 if any(phrase in skill_name.lower() for phrase in skip_phrases):
                     continue
 
