@@ -87,9 +87,16 @@ class FixedComprehensiveParser:
         # Extract relevant job titles from work experience
         relevant_job_titles = self._extract_relevant_job_titles(list_of_experiences)
 
+        # Extract current job role (most recent position or from header)
+        current_job_role = self._extract_current_job_role(text, list_of_experiences)
+
+        # Extract professional domains
+        domains = self._extract_domain(current_job_role, skills, list_of_experiences)
+
         return {
             'PersonalDetails': personal_details,
             'OverallSummary': {
+                'CurrentJobRole': current_job_role,
                 'RelevantJobTitles': relevant_job_titles,
                 'TotalExperience': f"{self._calculate_total_experience_months(experience) // 12} years",
                 'OverallSummary': summary
@@ -97,6 +104,7 @@ class FixedComprehensiveParser:
             'ListOfExperiences': list_of_experiences,
             'SocialMedia': contact_info.get('SocialMedia', []),
             'ListOfSkills': skills,
+            'Domain': domains,
             'Education': education,
             'Certifications': certifications,
             'Languages': languages,
@@ -518,11 +526,40 @@ class FixedComprehensiveParser:
 
                 # Look for job title in next non-empty line
                 job_title = ''
+                title_line_idx = -1
                 for j in range(i + 1, min(i + 5, len(lines))):
                     next_line = lines[j].strip()
                     if next_line and not next_line.startswith('Responsibilities'):
                         job_title = next_line
+                        title_line_idx = j
                         break
+
+                # Extract job description/responsibilities
+                description = ''
+                if title_line_idx != -1:
+                    # Look for "Responsibilities:" section after job title
+                    for j in range(title_line_idx + 1, min(title_line_idx + 50, len(lines))):
+                        line_check = lines[j].strip()
+
+                        # Check if we hit another position or section
+                        if '||' in line_check or self._is_section_header(line_check):
+                            break
+
+                        # Skip "Responsibilities:" header itself
+                        if line_check.lower() == 'responsibilities:':
+                            continue
+
+                        # Collect responsibility lines
+                        if line_check and len(line_check) > 10:
+                            # Stop if we encounter employment type or empty section
+                            if self._is_employment_type(line_check):
+                                break
+
+                            description += line_check + ' '
+
+                            # Limit description length
+                            if len(description) > 1500:
+                                break
 
                 if job_title:  # Only create position if we found a job title
                     position = {
@@ -532,7 +569,7 @@ class FixedComprehensiveParser:
                         'StartDate': {'Date': date_info['start_date']},
                         'EndDate': {'Date': date_info['end_date']},
                         'IsCurrent': date_info['is_current'],
-                        'Description': '',
+                        'Description': description.strip(),
                         'EmploymentType': '',
                         'JobCategory': '',
                         'JobLevel': ''
@@ -2126,6 +2163,98 @@ class FixedComprehensiveParser:
 
         return projects
 
+    def _extract_current_job_role(self, text: str, experiences: List[Dict[str, Any]]) -> str:
+        """Extract current job role from resume header or most recent position"""
+
+        # Strategy 1: Look for job title in header (first 10 lines)
+        lines = text.split('\n')
+        header_lines = lines[:10]
+
+        # Common patterns for current role in header
+        for i, line in enumerate(header_lines):
+            line_clean = line.strip()
+
+            # Skip name, contact info lines
+            if any(indicator in line_clean.lower() for indicator in ['phone:', 'email:', '@', '+1', '(', ')']):
+                continue
+
+            # Skip if it's just the name (all caps, no job terms)
+            if line_clean.isupper() and len(line_clean.split()) <= 4:
+                # Could be name - check next line
+                if i + 1 < len(header_lines):
+                    next_line = header_lines[i + 1].strip()
+                    # If next line looks like a job title, use it
+                    job_indicators = ['engineer', 'developer', 'manager', 'architect', 'analyst', 'consultant', 'specialist', 'programmer', 'administrator', 'lead']
+                    if any(indicator in next_line.lower() for indicator in job_indicators):
+                        return next_line
+
+            # Check if current line looks like a job title
+            if len(line_clean) > 5 and len(line_clean) < 60:
+                job_indicators = ['engineer', 'developer', 'manager', 'architect', 'analyst', 'consultant', 'specialist', 'programmer', 'administrator', 'lead']
+                if any(indicator in line_clean.lower() for indicator in job_indicators):
+                    return line_clean
+
+        # Strategy 2: Use most recent work experience title
+        if experiences:
+            # Find the most recent position (could be marked as Current or have latest start date)
+            for exp in experiences:
+                end_date = exp.get('EndDate', '')
+                if end_date and ('current' in str(end_date).lower() or 'present' in str(end_date).lower()):
+                    return exp.get('JobTitle', '')
+
+            # If no current position marked, use first position (usually most recent)
+            if experiences[0].get('JobTitle'):
+                return experiences[0].get('JobTitle')
+
+        return ''
+
+    def _extract_domain(self, job_title: str, skills: List[Dict[str, Any]], experiences: List[Dict[str, Any]]) -> List[str]:
+        """Extract professional domains based on job title, skills, and experience"""
+        domains = set()
+
+        # Combine all text for analysis
+        all_text = job_title.lower()
+
+        # Add skills text
+        for skill in skills:
+            skill_name = skill.get('SkillName', '').lower()
+            all_text += ' ' + skill_name
+
+        # Add company names and job descriptions
+        for exp in experiences:
+            all_text += ' ' + exp.get('CompanyName', '').lower()
+            all_text += ' ' + exp.get('JobTitle', '').lower()
+            all_text += ' ' + exp.get('Summary', '').lower()
+
+        # Domain detection patterns
+        domain_patterns = {
+            'Healthcare': ['health', 'medical', 'hospital', 'clinical', 'pharma', 'patient'],
+            'Finance': ['bank', 'financial', 'trading', 'investment', 'insurance', 'prudential', 'securities'],
+            'E-Commerce': ['retail', 'e-commerce', 'ecommerce', 'marketplace', 'walmart', 'amazon'],
+            'Government': ['government', 'public sector', 'state of', 'federal', 'municipal'],
+            'Technology': ['software', 'development', 'programming', 'engineer', 'developer', 'technology', 'it'],
+            'Telecommunications': ['telecom', 'network', 'wireless', 'mobile', 'communication'],
+            'Manufacturing': ['manufacturing', 'production', 'assembly', 'factory'],
+            'Education': ['education', 'university', 'school', 'academic', 'learning'],
+            'Mainframe Systems': ['mainframe', 'z/os', 'cobol', 'jcl', 'cics', 'db2', 'vsam', 'lpar'],
+            'Cloud Computing': ['aws', 'azure', 'gcp', 'cloud', 'kubernetes', 'docker'],
+            'Web Development': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'frontend', 'backend'],
+            'Data Science': ['machine learning', 'data science', 'analytics', 'python', 'r programming', 'tensorflow'],
+            'DevOps': ['devops', 'ci/cd', 'jenkins', 'git', 'ansible', 'terraform'],
+            'Cybersecurity': ['security', 'cybersecurity', 'penetration', 'firewall', 'encryption', 'racf']
+        }
+
+        # Check each domain
+        for domain, keywords in domain_patterns.items():
+            if any(keyword in all_text for keyword in keywords):
+                domains.add(domain)
+
+        # Ensure at least "Technology" if we found tech skills
+        if not domains:
+            domains.add('Technology')
+
+        return sorted(list(domains))
+
     def _extract_relevant_job_titles(self, experiences: List[Dict[str, Any]]) -> List[str]:
         """Extract unique, relevant job titles from work experience"""
         job_titles = []
@@ -2700,7 +2829,7 @@ class FixedComprehensiveParser:
                 'StartDate': start_date.split('-')[1] + ' ' + start_date.split('-')[0] if start_date != 'N/A' and '-' in start_date else start_date,
                 'EndDate': end_date,
                 'ExperienceInYears': exp_years,
-                'Summary': exp.get('Description', '')[:100] + '...' if exp.get('Description') else '',
+                'Summary': exp.get('Description', '').strip(),
                 'EmploymentType': exp.get('EmploymentType', '')
             })
 
