@@ -94,6 +94,8 @@ def check_field_value(result, category, field):
             return personal.get('EmailID')
         elif 'phone' in field_lower:
             return personal.get('PhoneNumber')
+        elif 'country code' in field_lower:
+            return personal.get('CountryCode')
         elif 'social media' in field_lower:
             return result.get('SocialMedia')
 
@@ -121,6 +123,10 @@ def check_field_value(result, category, field):
             return experiences[0].get('CompanyName') if experiences else None
         elif 'location' in field_lower:
             return experiences[0].get('Location') if experiences else None
+        elif 'start date' in field_lower:
+            return experiences[0].get('StartDate') if experiences else None
+        elif 'end date' in field_lower:
+            return experiences[0].get('EndDate') if experiences else None
         elif 'summary' in field_lower or 'description' in field_lower:
             return experiences[0].get('Summary') if experiences else None
         elif 'employment type' in field_lower:
@@ -131,8 +137,14 @@ def check_field_value(result, category, field):
     # Skills
     elif category == 'Skills':
         skills = result.get('ListOfSkills', [])
-        if 'skill' in field_lower and skills:
+        if not skills:
+            return None
+        if 'skill' in field_lower and 'last used' not in field_lower:
             return [s.get('SkillName') for s in skills]
+        elif 'last used' in field_lower:
+            # Check if any skill has LastUsed field
+            last_used_values = [s.get('LastUsed') for s in skills if s.get('LastUsed')]
+            return last_used_values if last_used_values else None
 
     # Domain
     elif category == 'Domain':
