@@ -209,8 +209,23 @@ class FixedComprehensiveParser:
             return True
 
         # Skip entries that are clearly job descriptions rather than titles
-        description_indicators = ['collect feedback', 'track project metrics', 'assist in fostering', 'develop hypotheses', 'reviewed and understood', 'work directly with clients', 'manage marketing campaigns', 'marketing planning']
+        description_indicators = [
+            'collect feedback', 'track project metrics', 'assist in fostering',
+            'develop hypotheses', 'reviewed and understood', 'work directly with clients',
+            'manage marketing campaigns', 'marketing planning',
+            'programming languages:', 'administered and configured',  # Added for Krupakar
+            'support the e2e testing', 'prepared program specification'  # Added for Krupakar
+        ]
         if any(indicator in job_title.lower() for indicator in description_indicators):
+            return True
+
+        # Skip very long titles that are clearly responsibilities/descriptions
+        if len(job_title) > 100:
+            return True
+
+        # Skip entries that start with action verbs (clearly responsibilities)
+        action_verbs = ['worked under', 'administered', 'prepared', 'support', 'developed', 'managed', 'coordinated']
+        if any(job_title.lower().startswith(verb) for verb in action_verbs):
             return True
 
         # Skip very short titles that don't make sense
@@ -226,16 +241,37 @@ class FixedComprehensiveParser:
     def _are_similar_positions(self, title1: str, company1: str, title2: str, company2: str) -> bool:
         """Check if two positions are similar (likely duplicates)"""
 
-        # Simple similarity check - same company or very similar titles
+        # Don't consider positions with empty companies as duplicates
+        if not company1 or not company2:
+            return False
+
+        # Simple similarity check - same company AND very similar titles
         if company1.lower() == company2.lower():
-            return True
+            # Same company - check if titles are also similar
+            title1_lower = title1.lower()
+            title2_lower = title2.lower()
+
+            # Consider duplicates if titles are exactly the same or very similar
+            if title1_lower == title2_lower:
+                return True
+
+            # Check if one title is contained in another (e.g., "Project Manager" and "Senior Project Manager")
+            if title1_lower in title2_lower or title2_lower in title1_lower:
+                return True
+
+            # Different titles at same company = NOT duplicates
+            return False
 
         # Check if companies are variations of the same (e.g., "RIYADA" vs "CLIENT: RIYADA")
         company1_clean = company1.lower().replace('client:', '').strip()
         company2_clean = company2.lower().replace('client:', '').strip()
 
-        if company1_clean in company2_clean or company2_clean in company1_clean:
-            return True
+        if company1_clean and company2_clean and (company1_clean in company2_clean or company2_clean in company1_clean):
+            # Similar companies - check titles too
+            title1_lower = title1.lower()
+            title2_lower = title2.lower()
+            if title1_lower == title2_lower or title1_lower in title2_lower or title2_lower in title1_lower:
+                return True
 
         return False
 
