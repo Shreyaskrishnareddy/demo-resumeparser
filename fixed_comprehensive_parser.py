@@ -140,7 +140,8 @@ class FixedComprehensiveParser:
             line_upper = line.strip().upper().rstrip(':')  # Remove trailing colon
             # Be more specific about section headers - must be standalone lines
             if (line_upper in ['EMPLOYMENT HISTORY', 'WORK EXPERIENCE', 'PROFESSIONAL EXPERIENCE',
-                              'CAREER HISTORY', 'EMPLOYMENT', 'WORK HISTORY', 'EXPERIENCE DETAILS'] or
+                              'CAREER HISTORY', 'EMPLOYMENT', 'WORK HISTORY', 'EXPERIENCE DETAILS',
+                              'EMPLOYMENT TIMELINE'] or
                 (line_upper == 'EXPERIENCE' and len(line.strip().split()) == 1)):
                 experience_start = i + 1
                 break
@@ -171,6 +172,7 @@ class FixedComprehensiveParser:
         positions.extend(self._parse_traditional_company_format(experience_lines))
         positions.extend(self._parse_job_title_first_format(experience_lines))
         positions.extend(self._parse_company_pipe_date_format(experience_lines))
+        positions.extend(self._parse_client_format(experience_lines))
 
         # Filter and deduplicate positions
         positions = self._filter_and_dedupe_positions(positions)
@@ -566,6 +568,101 @@ class FixedComprehensiveParser:
                         'JobTitle': {'Raw': job_title},
                         'Employer': {'Name': {'Raw': company_info['company']}},
                         'Location': self._parse_location(company_info['location']) if company_info['location'] else {},
+                        'StartDate': {'Date': date_info['start_date']},
+                        'EndDate': {'Date': date_info['end_date']},
+                        'IsCurrent': date_info['is_current'],
+                        'Description': description.strip(),
+                        'EmploymentType': '',
+                        'JobCategory': '',
+                        'JobLevel': ''
+                    }
+                    positions.append(position)
+
+        return positions
+
+    def _parse_client_format(self, lines: List[str]) -> List[Dict[str, Any]]:
+        """
+        Parse work experience in Client: format
+        Format: Client: Company, Location\t[Date Range]
+                Job Title
+                Tasks & Roles:
+                [Responsibilities]
+        """
+        import re
+        positions = []
+
+        for i, line in enumerate(lines):
+            # Look for lines starting with "Client:"
+            if line.strip().startswith('Client:'):
+                # Extract company, location, and date from the Client line
+                # Format: "Client: Visa, San Francisco, CA\tSep 2022 - Till Date"
+                client_line = line.strip()
+
+                # Remove "Client:" prefix
+                client_line = client_line.replace('Client:', '').strip()
+
+                # Split by tab to separate company/location from date
+                if '\t' in client_line:
+                    company_location_part, date_part = client_line.split('\t', 1)
+                else:
+                    company_location_part = client_line
+                    date_part = ''
+
+                # Parse company and location
+                parts = [p.strip() for p in company_location_part.split(',')]
+                if len(parts) >= 2:
+                    company = parts[0]
+                    location = ', '.join(parts[1:])
+                else:
+                    company = company_location_part
+                    location = ''
+
+                # Parse date range
+                date_info = self._parse_date_range_enhanced(date_part.strip()) if date_part else {
+                    'start_date': '', 'end_date': '', 'is_current': False
+                }
+
+                # Look for job title in next non-empty line
+                job_title = ''
+                title_line_idx = -1
+                for j in range(i + 1, min(i + 5, len(lines))):
+                    next_line = lines[j].strip()
+                    if next_line and not next_line.startswith('Tasks & Roles'):
+                        job_title = next_line
+                        title_line_idx = j
+                        break
+
+                # Extract job description/responsibilities
+                description = ''
+                if title_line_idx != -1:
+                    # Look for "Tasks & Roles:" section
+                    for j in range(title_line_idx + 1, min(title_line_idx + 50, len(lines))):
+                        line_check = lines[j].strip()
+
+                        # Stop if we hit another Client entry
+                        if line_check.startswith('Client:'):
+                            break
+
+                        # Skip "Tasks & Roles:" header
+                        if 'Tasks & Roles' in line_check or 'Responsibilities' in line_check:
+                            continue
+
+                        # Collect responsibility lines
+                        if line_check and len(line_check) > 20:
+                            description += line_check + ' '
+
+                            # Limit description length
+                            if len(description) > 1500:
+                                break
+
+                if job_title and company:  # Only create position if we have both
+                    position = {
+                        'JobTitle': {'Raw': job_title},
+                        'Employer': {
+                            'Name': {'Raw': company},
+                            'Location': {'Municipality': location}
+                        },
+                        'Location': {'Municipality': location},
                         'StartDate': {'Date': date_info['start_date']},
                         'EndDate': {'Date': date_info['end_date']},
                         'IsCurrent': date_info['is_current'],
@@ -1726,19 +1823,21 @@ class FixedComprehensiveParser:
 
         # Find skills section
         skills_start = -1
-        skills_keywords = ['TECHNICAL SKILLS', 'SKILLS', 'COMPETENCIES', 'TECHNOLOGIES', 'Technical Skills', 'Core Competencies']
+        skills_keywords = ['TECHNICAL SKILLS', 'SKILLS', 'COMPETENCIES', 'TECHNOLOGIES', 'Technical Skills', 'Core Competencies', 'PROFESSIONAL SUMMARY']
 
         for i, line in enumerate(lines):
             line_clean = line.strip()
             if any(keyword.lower() in line_clean.lower() for keyword in skills_keywords):
                 # Make sure it's a section header (not just mentioning skills)
                 if len(line_clean) < 50 and ('skills' in line_clean.lower() or 'technical' in line_clean.lower() or 'competencies' in line_clean.lower()):
-                    skills_start = i
-                    break
+                    if 'professional summary' not in line_clean.lower():
+                        skills_start = i
+                        break
 
-        # If no skills section found, look for skills mentioned in technical experience paragraphs
-        if skills_start == -1:
+        # If no skills section found OR we found Professional Summary, use pattern matching
+        if skills_start == -1 or ('professional summary' in lines[skills_start].lower() if skills_start != -1 else False):
             self._extract_skills_from_paragraphs(text, skills)
+            return skills  # Return early - pattern matching handles everything
 
         if skills_start == -1:
             return skills
@@ -1780,6 +1879,25 @@ class FixedComprehensiveParser:
             skill_text = re.sub(r'^[•\-\*]\s*', '', skill_text)
             skill_text = re.sub(r'^[0-9]+\.\s*', '', skill_text)
 
+            # Handle "Category: skill1, skill2, skill3" format
+            if ':' in skill_text and skill_text.index(':') < 100:
+                parts = skill_text.split(':', 1)
+                if len(parts) == 2:
+                    category_part = parts[0].strip()
+                    skills_part = parts[1].strip()
+
+                    # Check if category part looks like a category (not a skill)
+                    category_keywords = ['Technologies', 'Development', 'Testing', 'Management',
+                                       'Design', 'Expertise', 'Proficiency', 'Experience',
+                                       'Mastery', 'Architecture', 'Integration', 'Tools',
+                                       'Scripting', 'Monitoring', 'Computing', 'Containerization',
+                                       'Platforms', 'Practices', 'Systems', 'Best Practices']
+
+                    if any(keyword in category_part for keyword in category_keywords):
+                        # Use the category, and parse skills from the second part
+                        current_category = category_part
+                        skill_text = skills_part
+
             # Split by commas and clean up
             if ',' in skill_text:
                 individual_skills = [s.strip() for s in skill_text.split(',')]
@@ -1795,6 +1913,23 @@ class FixedComprehensiveParser:
 
                 # Skip if it looks like a description rather than a skill
                 if len(skill_name) > 100:
+                    continue
+
+                # Skip descriptions/sentences (contain many common words)
+                common_words = ['with', 'using', 'building', 'developing', 'ensuring', 'delivering',
+                               'managing', 'implementing', 'optimizing', 'designing', 'creating',
+                               'adept at', 'skilled in', 'proficient', 'experienced', 'expertise',
+                               'leveraging', 'including', 'such as', 'effective', 'efficient',
+                               'robust', 'scalable', 'secure', 'seamless', 'advanced']
+                word_count = sum(1 for word in common_words if word in skill_name.lower())
+                if word_count >= 2 or len(skill_name.split()) > 6:
+                    continue
+
+                # Skip generic phrases
+                skip_phrases = ['highly skilled', 'extensive experience', 'deep expertise',
+                              'adept at', 'proficient in', 'experienced in', 'skilled in',
+                              'expert in', 'advanced skills', 'user-focused', 'well-managed']
+                if any(phrase in skill_name.lower() for phrase in skip_phrases):
                     continue
 
                 # Extract experience if mentioned in parentheses
@@ -1979,61 +2114,66 @@ class FixedComprehensiveParser:
         return final_skills
 
     def _extract_skills_from_paragraphs(self, text: str, skills: List[Dict[str, Any]]) -> None:
-        """Extract skills from paragraphs that mention technical experience"""
-        lines = text.split('\n')
+        """Extract skills from paragraphs using technology pattern matching"""
+        # Common technologies, frameworks, and tools to look for
+        tech_patterns = [
+            # Frontend
+            r'\bAngular\s*\d*\+?', r'\bReact\b', r'\bVue\.?js\b', r'\bTypeScript\b', r'\bJavaScript\b',
+            r'\bHTML\b', r'\bCSS\b', r'\bjQuery\b', r'\bBootstrap\b', r'\bAjax\b',
+            r'\bRedux\b', r'\bNgRx\b', r'\bBlazor\b',
 
-        for line in lines:
-            line_clean = line.strip()
+            # Backend / .NET
+            r'\.NET\s*(?:Core|Framework)?(?:\s*\d+\.?\d*)?', r'\bC#\b', r'\bASP\.NET\b',
+            r'\bEntity Framework\b', r'\bLINQ\b', r'\bWeb\s*API\b', r'\bREST(?:ful)?\b',
+            r'\bMicroservices\b',
 
-            # Look for lines that mention technical experience and technologies
-            if ('technical experience' in line_clean.lower() and 'include' in line_clean.lower()) or \
-               ('expertise in tools' in line_clean.lower()) or \
-               ('competencies' in line_clean.lower() and ('o ' in line_clean or '•' in line_clean)):
+            # Databases
+            r'\bSQL\s*Server\b', r'\bOracle\b', r'\bMySQL\b', r'\bPostgreSQL\b', r'\bMongoDB\b',
+            r'\bDB2\b', r'\bPL/SQL\b',
 
-                # Extract technology names from the line
-                # Look for patterns like "include REST API, Micro-Services, Web API"
-                if 'include' in line_clean.lower():
-                    # Split on "include" and take the part after it
-                    parts = line_clean.lower().split('include')
-                    if len(parts) > 1:
-                        tech_part = parts[1]
-                        # Split by common separators
-                        technologies = re.split(r'[,;&]', tech_part)
-                        for tech in technologies:
-                            tech = tech.strip()
-                            tech = re.sub(r'^and\s+', '', tech)  # Remove leading "and"
-                            tech = re.sub(r'\.$', '', tech)     # Remove trailing period
+            # Cloud
+            r'\bAzure\b', r'\bAWS\b', r'\bGCP\b', r'\bKubernetes\b', r'\bDocker\b',
 
-                            if len(tech) > 2 and len(tech) < 50:  # Reasonable length
-                                skills.append({
-                                    'SkillName': tech.title(),
+            # Tools
+            r'\bGit(?:Hub|Lab)?\b', r'\bJIRA\b', r'\bJenkins\b', r'\bPostman\b',
+            r'\bSOAPUI\b', r'\bSwagger\b', r'\bLog4Net\b', r'\bSerilog\b',
+            r'\bNuGet\b', r'\bPowerShell\b', r'\bTeamCity\b', r'\bRally\b',
+            r'\bTFS\b', r'\bConfluence\b', r'\bSlack\b', r'\bTeams\b',
+
+            # Testing
+            r'\bJasmine\b', r'\bJest\b', r'\bMocha\b', r'\bChai\b', r'\bXUnit\b',
+            r'\bKarma\b', r'\bCucumber\b',
+
+            # Security / Auth
+            r'\bOAuth2?\b', r'\bJWT\b', r'\bSSL\b', r'\bRACF\b',
+
+            # BI / Visualization
+            r'\bPowerBI\b', r'\bTableau\b',
+
+            # Message Queues
+            r'\bKafka\b', r'\bRabbitMQ\b',
+
+            # Monitoring
+            r'\bPrometheus\b', r'\bGrafana\b', r'\bNew\s*Relic\b',
+            r'\bApplication\s*Insights\b'
+        ]
+
+        found_skills = set()  # Use set to avoid duplicates
+
+        for pattern in tech_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                # Clean up the match
+                skill_name = match.strip()
+                if skill_name and skill_name not in found_skills:
+                    found_skills.add(skill_name)
+                    skills.append({
+                                    'SkillName': skill_name,
                                     'Type': 'Technical Skill',
-                                    'Category': 'Technologies',
-                                    'ExperienceInMonths': 24,  # Default to 2 years for mentioned technologies
+                                    'Category': 'Technology',
+                                    'ExperienceInMonths': 24,
                                     'LastUsed': 'Current',
-                                    'ProficiencyLevel': 'Intermediate',
-                                    'IsCertified': False
-                                })
-
-                # Look for tools mentioned after "tools like"
-                elif 'tools like' in line_clean.lower():
-                    parts = line_clean.lower().split('tools like')
-                    if len(parts) > 1:
-                        tools_part = parts[1]
-                        tools = re.split(r'[,;&]', tools_part)
-                        for tool in tools:
-                            tool = tool.strip()
-                            tool = re.sub(r'^and\s+', '', tool)
-                            tool = re.sub(r'\.$', '', tool)
-
-                            if len(tool) > 2 and len(tool) < 50:
-                                skills.append({
-                                    'SkillName': tool.title(),
-                                    'Type': 'Tool',
-                                    'Category': 'Tools',
-                                    'ExperienceInMonths': 18,  # Default to 1.5 years for tools
-                                    'LastUsed': 'Current',
-                                    'ProficiencyLevel': 'Intermediate',
+                                    'ProficiencyLevel': 'Expert',
                                     'IsCertified': False
                                 })
 
