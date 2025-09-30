@@ -1,0 +1,44 @@
+S.No,Category,Data Field,Resume 1 (Ahmad Qasem),Resume 1 Sample,Resume 2 (Zamen Aladwani),Resume 2 Sample,Resume 3 (Krupakar Reddy),Resume 3 Sample,Resume 4 (Venkat Rohit),Resume 4 Sample,JSON Path,Status
+1,Personal Details,Full Name,YES,Ahmad Qassem,YES,Zaman Adwani,YES,KRUPAKAR REDDY P,YES,Venkat Rohit,PersonalDetails.FullName,✅ All Resumes
+2,Personal Details,First Name,YES,Ahmad,YES,Zaman,YES,KRUPAKAR,YES,Venkat,PersonalDetails.FirstName,✅ All Resumes
+3,Personal Details,Middle Name,NO,,NO,,YES,REDDY,NO,,PersonalDetails.MiddleName,⚠️ Some Missing
+4,Personal Details,Last Name,YES,Qassem,YES,Adwani,YES,P,YES,Rohit,PersonalDetails.LastName,✅ All Resumes
+5,Personal Details,Email ID,YES,ahmad.elsheikhq@gmail.com,YES,zaman.adwani@gmail.com,YES,Saikrupakarred@gmail.com,YES,venkatarohith214@gmail.com,PersonalDetails.EmailID,✅ All Resumes
+6,Personal Details,Phone Number,YES,(312) 723-2889,YES,(469) 779-5417,YES,(513) 278-7332,YES,(731) 213-1186,PersonalDetails.PhoneNumber,✅ All Resumes
+7,Personal Details,Country Code,YES,+1,YES,+1,YES,+1,YES,+1,PersonalDetails.CountryCode,✅ All Resumes
+8,Personal Details,Social Media Links,NO,No links found,NO,No links found,NO,No links found,YES,1 links,SocialMedia[],⚠️ Some Missing
+9,Overall Summary,Current Job Role,YES,Project Manager III,YES,TEAM LEAD PROJECT MANAGER – CENTER OF EXCELLENCE T,YES,Mainframe Z/os System Programmer,YES,Senior .NET Developer,OverallSummary.CurrentJobRole,✅ All Resumes
+10,Overall Summary,Relevant Job Titles,YES,3 titles,YES,5 titles,YES,3 titles,YES,4 titles,OverallSummary.RelevantJobTitles[],✅ All Resumes
+11,Overall Summary,Total Experience,YES,9 years,YES,13 years,YES,11 years,YES,12 years,OverallSummary.TotalExperience,✅ All Resumes
+12,Overall Summary,Summary,YES,886 chars,YES,21359 chars,YES,2018 chars,YES,25269 chars,OverallSummary.OverallSummary,✅ All Resumes
+13,Work Experiences,Job Title,YES,8 positions,YES,5 positions,YES,6 positions,YES,6 positions,ListOfExperiences[].JobTitle,✅ All Resumes
+14,Work Experiences,Total Experience,YES,8 positions,YES,5 positions,YES,6 positions,YES,6 positions,TotalWorkExperience,✅ All Resumes
+15,Work Experiences,Summary,YES,5 descriptions,YES,5 descriptions,YES,6 descriptions,YES,6 descriptions,ListOfExperiences[].Summary,✅ All Resumes
+16,Work Experiences,Company Name,YES,8 companies,YES,5 companies,YES,6 companies,YES,6 companies,ListOfExperiences[].CompanyName,✅ All Resumes
+17,Work Experiences,Employment Type,YES,Extracted,YES,Extracted,YES,Extracted,YES,Extracted,ListOfExperiences[].EmploymentType,✅ All Resumes
+18,Work Experiences,Location,YES,8 locations,YES,5 locations,YES,6 locations,YES,6 locations,ListOfExperiences[].Location,✅ All Resumes
+19,Work Experiences,Start Date,YES,7 dates,YES,5 dates,YES,6 dates,YES,6 dates,ListOfExperiences[].StartDate,✅ All Resumes
+20,Work Experiences,End Date,YES,7 dates,YES,5 dates,YES,6 dates,YES,6 dates,ListOfExperiences[].EndDate,✅ All Resumes
+21,Skills,Skills Name,YES,11 skills,YES,20 skills,YES,22 skills,YES,79 skills,ListOfSkills[].SkillName,✅ All Resumes
+22,Skills,Skill Experience,YES,11 skills,YES,20 skills,YES,22 skills,YES,79 skills,ListOfSkills[].ExperienceInMonths,✅ All Resumes
+23,Skills,Last Used,YES,11 skills,YES,20 skills,YES,22 skills,YES,79 skills,ListOfSkills[].LastUsed,✅ All Resumes
+24,Skills,Relevant Skills,YES,11 skills,YES,20 skills,YES,22 skills,YES,79 skills,ListOfSkills[],✅ All Resumes
+25,Education,Full Education Detail,YES,1 entries,YES,3 entries,NO,Not in resume,YES,1 entries,Education[].Degree,⚠️ Some Missing
+26,Education,Type of Education,YES,1 entries,YES,3 entries,NO,Not in resume,YES,1 entries,Education[].Degree,⚠️ Some Missing
+27,Education,Majors / Field of Study,YES,1 fields,YES,3 fields,NO,Not in resume,YES,1 fields,Education[].FieldOfStudy,⚠️ Some Missing
+28,Education,University / School Name,YES,1 institutions,YES,3 institutions,NO,Not in resume,YES,1 institutions,Education[].Institution,⚠️ Some Missing
+29,Education,Location,NO,,YES,3 locations,NO,Not in resume,NO,,Education[].Location,⚠️ Some Missing
+30,Education,Year Passed,YES,1 years,YES,3 years,NO,Not in resume,NO,,Education[].EndDate,⚠️ Some Missing
+31,Certifications,Certification Name,YES,5 certifications,YES,4 certifications,NO,Not in resume,YES,5 certifications,Certifications[].Name,⚠️ Some Missing
+32,Certifications,Issuer Name,YES,5 issuers,YES,4 issuers,NO,Not in resume,YES,5 issuers,Certifications[].Issuer,⚠️ Some Missing
+33,Certifications,Issued Year,NO,,NO,,NO,Not in resume,NO,,Certifications[].IssuedDate,⚠️ Some Missing
+34,Languages,Language Name,YES,2 languages,YES,2 languages,YES,1 languages,YES,1 languages,Languages[].Language,✅ All Resumes
+35,Achievements,Achievements,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Achievements[],⚠️ Some Missing
+36,Projects,Project Name,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].Name,⚠️ Some Missing
+37,Projects,Description of Project,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].Description,⚠️ Some Missing
+38,Projects,Company Worked,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].Company,⚠️ Some Missing
+39,Projects,Role in Project,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].Role,⚠️ Some Missing
+40,Projects,Start Date,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].StartDate,⚠️ Some Missing
+41,Projects,End Date,NO,Not in resume,NO,Not in resume,NO,Not in resume,NO,Not in resume,Projects[].EndDate,⚠️ Some Missing
+42,Key Responsibilities,List of Key Responsibilities,YES,5 items,YES,5 items,YES,6 items,YES,6 items,KeyResponsibilities[],✅ All Resumes
+43,Domain,List of Domains,YES,"3 domains: Cybersecurity, Technology, Telecommunications",YES,"4 domains: Data Science, Finance, Technology",YES,"9 domains: Cybersecurity, E-Commerce, Finance",YES,"9 domains: Cloud Computing, Data Science, DevOps",Domain[],✅ All Resumes
