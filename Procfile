@@ -1,1 +1,1 @@
-web: python clean_server.py
+web: python production_server.py
