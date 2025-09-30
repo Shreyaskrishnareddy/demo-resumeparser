@@ -1,0 +1,70 @@
+🧪 COMPREHENSIVE ACCURACY VALIDATION
+============================================================
+BRD Requirement: 90.0% accuracy
+Performance Target: ≤2ms parsing time
+============================================================
+Found 14 resume files to test
+
+📄 Testing: Ahmad Qasem-Resume.pdf
+  ⚠️  Performance: 109.80ms (exceeds target)
+  ✅ Accuracy: 93%
+  📊 Data: Ahmad Qassem | 8 exp | 9 skills
+
+📄 Testing: Ashok Kumar.doc
+  ⚠️  Performance: 78.75ms (exceeds target)
+  ❌ Accuracy: 88% (below 90.0%)
+  📊 Data: file formats like | 5 exp | 15 skills
+
+📄 Testing: Dexter Nigel Ramkissoon.docx
+  ⚠️  Performance: 112.21ms (exceeds target)
+  ❌ Accuracy: 76% (below 90.0%)
+  📊 Data: Dexter Nigel Ramkissoon | 8 exp | 6 skills
+
+📄 Testing: Donald Belvin.docx
+  ⚠️  Performance: 32.39ms (exceeds target)
+  ❌ Accuracy: 80% (below 90.0%)
+  📊 Data: Donald Belvin | 1 exp | 9 skills
+
+📄 Testing: Jumoke-Adekanmi-Web-Developer-2025-03-21.pdf
+  ⚠️  Performance: 20.10ms (exceeds target)
+  ❌ Accuracy: 84% (below 90.0%)
+  📊 Data: Jumoke Adekanmi | 8 exp | 15 skills
+
+📄 Testing: Kiran N. Penmetcha_s Profile.pdf
+  ⚠️  Performance: 55.47ms (exceeds target)
+  ❌ Accuracy: 89% (below 90.0%)
+  📊 Data: Kiran N. Penmetcha | 8 exp | 15 skills
+
+📄 Testing: Mahesh_Bolikonda (1).pdf
+  ⚠️  Performance: 71.38ms (exceeds target)
+  ❌ Accuracy: 89% (below 90.0%)
+  📊 Data: Mahesh Bolikonda PMP | 8 exp | 13 skills
+
+📄 Testing: Mutchie.docx
+  ⚠️  Performance: 30.21ms (exceeds target)
+  ❌ Accuracy: 84% (below 90.0%)
+  📊 Data: WILLIAM E. MUTCHIE | 8 exp | 14 skills
+
+📄 Testing: PRANAY REDDY_DE_Resume.pdf
+  ⚠️  Performance: 66.70ms (exceeds target)
+  ❌ Accuracy: 84% (below 90.0%)
+  📊 Data: PRANAY REDDY 
+Sr | 8 exp | 15 skills
+
+📄 Testing: Resume of Connal Jackson.doc
+  ⚠️  Performance: 59314.63ms (exceeds target)
+  ✅ Accuracy: 93%
+  📊 Data: Microsoft Office Word | 5 exp | 10 skills
+
+============================================================
+📊 COMPREHENSIVE VALIDATION SUMMARY
+============================================================
+Files tested: 10
+Average accuracy: 86.0%
+Average performance: 5989.16ms
+
+🎯 BRD COMPLIANCE:
+  Accuracy (≥90.0%): 2/10 files (20.0%)
+  Performance (≤2ms): 0/10 files (0.0%)
+
+⚠️  ❌ OVERALL BRD COMPLIANCE: NEEDS IMPROVEMENT

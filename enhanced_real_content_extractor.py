@@ -252,17 +252,6 @@ class EnhancedRealContentExtractor:
                 return phone  # Keep original format
 
         return phone
-                    # Filter out obviously invalid patterns (repeated digits)
-                    if not (re.match(r'^0{7,}$', digits_only) or
-                           re.match(r'^1{7,}$', digits_only) or
-                           re.match(r'^2{7,}$', digits_only) or
-                           re.search(r'(.)\1{6,}', digits_only)):
-                        seen_phones.add(clean_phone)
-                        # Restore original formatting
-                        formatted_phone = phone.strip()
-                        clean_phones.append(formatted_phone)
-
-        return clean_phones
 
     def _extract_real_name(self, text: str, email: str = "", filename: str = "") -> str:
         """Extract real person name with enhanced strategies"""

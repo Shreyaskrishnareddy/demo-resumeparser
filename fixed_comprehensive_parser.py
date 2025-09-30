@@ -93,23 +93,50 @@ class FixedComprehensiveParser:
         # Extract professional domains
         domains = self._extract_domain(current_job_role, skills, list_of_experiences)
 
+        # Ensure ALL 43 expected fields are present in output
         return {
+            # Personal Details (8 fields)
             'PersonalDetails': personal_details,
+            'SocialMedia': contact_info.get('SocialMedia', []),
+
+            # Overall Summary (4 fields)
             'OverallSummary': {
                 'CurrentJobRole': current_job_role,
                 'RelevantJobTitles': relevant_job_titles,
                 'TotalExperience': f"{self._calculate_total_experience_months(experience) // 12} years",
                 'OverallSummary': summary
             },
+
+            # Work Experience (8 fields + array)
             'ListOfExperiences': list_of_experiences,
-            'SocialMedia': contact_info.get('SocialMedia', []),
+            'TotalWorkExperience': len(list_of_experiences),  # Count of positions
+
+            # Skills (4 fields + array)
             'ListOfSkills': skills,
+            'TotalSkills': len(skills),  # Count of skills
+
+            # Domain (1 field)
             'Domain': domains,
+
+            # Education (6 fields in array)
             'Education': education,
+
+            # Certifications (3 fields in array)
             'Certifications': certifications,
+
+            # Languages (1 field in array)
             'Languages': languages,
+
+            # Achievements (1 field array)
             'Achievements': achievements,
+
+            # Projects (6 fields in array)
             'Projects': projects,
+
+            # Key Responsibilities (extracted from work experience)
+            'KeyResponsibilities': [exp.get('Summary', '') for exp in list_of_experiences if exp.get('Summary')],
+
+            # Parsing Metadata
             'ParsingMetadata': {
                 'parsing_time_ms': processing_time * 1000,
                 'timestamp': datetime.now().isoformat(),
