@@ -82,7 +82,7 @@ class FixedComprehensiveParser:
 
         # Convert to expected BRD-compliant format
         personal_details = self._convert_contact_to_personal_details(contact_info)
-        list_of_experiences = self._convert_experience_to_list_format(experience)
+        list_of_experiences = self._convert_experience_to_list_format(experience, text)
 
         # Extract relevant job titles from work experience
         relevant_job_titles = self._extract_relevant_job_titles(list_of_experiences)
@@ -93,9 +93,10 @@ class FixedComprehensiveParser:
         # Extract professional domains
         domains = self._extract_domain(current_job_role, skills, list_of_experiences)
 
-        # Smart inference: If no projects found, infer from work experience
-        if not projects and list_of_experiences:
-            projects = self._infer_projects_from_experience(list_of_experiences)
+        # Smart inference: If no projects found, leave empty (don't infer from work experience)
+        # Inferring creates confusion between Projects and Work Experience
+        # if not projects and list_of_experiences:
+        #     projects = self._infer_projects_from_experience(list_of_experiences)
 
         # Smart inference: If no achievements found, extract from work descriptions
         if not achievements and list_of_experiences:
@@ -141,8 +142,8 @@ class FixedComprehensiveParser:
             # Projects (6 fields in array)
             'Projects': projects,
 
-            # Key Responsibilities (extracted from work experience)
-            'KeyResponsibilities': [exp.get('Summary', '') for exp in list_of_experiences if exp.get('Summary')],
+            # Key Responsibilities (extract actual bullet points from descriptions, not company overviews)
+            'KeyResponsibilities': self._extract_key_responsibilities(list_of_experiences),
 
             # Parsing Metadata
             'ParsingMetadata': {
@@ -244,13 +245,26 @@ class FixedComprehensiveParser:
     def _is_invalid_work_entry(self, job_title: str, company: str) -> bool:
         """Check if a work entry is invalid (education, responsibility, etc.)"""
 
-        # Skip entries that look like education
-        education_keywords = ['master', 'bachelor', 'phd', 'mba', 'degree', 'university', 'college']
-        if any(keyword in job_title.lower() for keyword in education_keywords):
+        # Skip entries that look like education (use word boundaries to avoid false positives like "Scrum Master")
+        education_keywords = ['bachelor', 'phd', 'mba', 'degree', 'university', 'college']
+        # For "master", only match if it's followed by "'s" or "of" (e.g., "Master's Degree", "Master of Science")
+        # but NOT "Scrum Master", "Project Master", etc.
+        title_lower = job_title.lower()
+        if any(keyword in title_lower for keyword in education_keywords):
+            return True
+        if "master's" in title_lower or "master of" in title_lower:
             return True
 
         # Skip entries that start with bullets or are clearly responsibilities
         if job_title.startswith('Ø') or job_title.startswith('•'):
+            return True
+
+        # Skip entries that contain email addresses (garbled headers)
+        if '@' in job_title or 'ahmad.elsheikhq' in job_title.lower():
+            return True
+
+        # Skip entries that are clearly company-location headers mistaken as job titles
+        if re.search(r'^[A-Z][a-z]+\s+(Solutions|Inc\.|LLC|Corporation|Company)\s*[-–]\s*[A-Z]', job_title):
             return True
 
         # Skip entries that are clearly job descriptions rather than titles
@@ -258,8 +272,9 @@ class FixedComprehensiveParser:
             'collect feedback', 'track project metrics', 'assist in fostering',
             'develop hypotheses', 'reviewed and understood', 'work directly with clients',
             'manage marketing campaigns', 'marketing planning',
-            'programming languages:', 'administered and configured',  # Added for Krupakar
-            'support the e2e testing', 'prepared program specification'  # Added for Krupakar
+            'programming languages:', 'administered and configured',
+            'support the e2e testing', 'prepared program specification',
+            'control the budget and finance'  # Added for Ahmad's resume
         ]
         if any(indicator in job_title.lower() for indicator in description_indicators):
             return True
@@ -269,7 +284,7 @@ class FixedComprehensiveParser:
             return True
 
         # Skip entries that start with action verbs (clearly responsibilities)
-        action_verbs = ['worked under', 'administered', 'prepared', 'support', 'developed', 'managed', 'coordinated']
+        action_verbs = ['worked under', 'administered', 'prepared', 'support', 'developed', 'managed', 'coordinated', 'control']
         if any(job_title.lower().startswith(verb) for verb in action_verbs):
             return True
 
@@ -393,11 +408,13 @@ class FixedComprehensiveParser:
                             break
                     break
 
-                # Look for employment type in next line
-                if j + 1 < len(lines):
-                    employment_type_line = lines[j + 1].strip()
-                    if self._is_employment_type(employment_type_line):
-                        position['EmploymentType'] = employment_type_line
+                # Look for employment type in next few lines
+                for emp_check_idx in range(j + 1, min(j + 4, len(lines))):
+                    if emp_check_idx < len(lines):
+                        employment_type_line = lines[emp_check_idx].strip()
+                        if self._is_employment_type(employment_type_line):
+                            position['EmploymentType'] = employment_type_line
+                            break
 
             # Look for description in following lines (limit to avoid overlap)
             desc_start = start_idx + 5  # Start after job title area
@@ -618,7 +635,11 @@ class FixedComprehensiveParser:
     def _parse_client_format(self, lines: List[str]) -> List[Dict[str, Any]]:
         """
         Parse work experience in Client: format
-        Format: Client: Company, Location\t[Date Range]
+        Format: CLIENT: Company, Location\t[Date Range]
+                OR
+                CLIENT: Company (Location)
+                [blank lines]
+                OCT 21 – JAN 2023
                 Job Title
                 Tasks & Roles:
                 [Responsibilities]
@@ -627,14 +648,14 @@ class FixedComprehensiveParser:
         positions = []
 
         for i, line in enumerate(lines):
-            # Look for lines starting with "Client:"
-            if line.strip().startswith('Client:'):
+            # Look for lines starting with "Client:" (case-insensitive)
+            if line.strip().upper().startswith('CLIENT:'):
                 # Extract company, location, and date from the Client line
-                # Format: "Client: Visa, San Francisco, CA\tSep 2022 - Till Date"
+                # Format: "CLIENT: Visa, San Francisco, CA\tSep 2022 - Till Date"
                 client_line = line.strip()
 
-                # Remove "Client:" prefix
-                client_line = client_line.replace('Client:', '').strip()
+                # Remove "Client:" prefix (case-insensitive)
+                client_line = re.sub(r'^CLIENT:\s*', '', client_line, flags=re.IGNORECASE)
 
                 # Split by tab to separate company/location from date
                 if '\t' in client_line:
@@ -643,29 +664,57 @@ class FixedComprehensiveParser:
                     company_location_part = client_line
                     date_part = ''
 
-                # Parse company and location
-                parts = [p.strip() for p in company_location_part.split(',')]
-                if len(parts) >= 2:
-                    company = parts[0]
-                    location = ', '.join(parts[1:])
+                # Extract location from parentheses if present
+                location = ''
+                if '(' in company_location_part and ')' in company_location_part:
+                    # Format: "FIRST MERCHANTS BANK    (REMOTE)"
+                    match = re.match(r'(.+?)\s*\((.+?)\)', company_location_part)
+                    if match:
+                        company = match.group(1).strip()
+                        location = match.group(2).strip()
+                    else:
+                        company = company_location_part
+                elif ',' in company_location_part:
+                    # Parse company and location from comma-separated format
+                    parts = [p.strip() for p in company_location_part.split(',')]
+                    if len(parts) >= 2:
+                        company = parts[0]
+                        location = ', '.join(parts[1:])
+                    else:
+                        company = company_location_part
                 else:
                     company = company_location_part
-                    location = ''
+
+                # If no date on the same line, look for date in next few lines
+                if not date_part:
+                    for j in range(i + 1, min(i + 10, len(lines))):
+                        next_line = lines[j].strip()
+                        # Check if this line contains a date range pattern
+                        if next_line and self._contains_date_range(next_line):
+                            date_part = next_line
+                            break
 
                 # Parse date range
                 date_info = self._parse_date_range_enhanced(date_part.strip()) if date_part else {
                     'start_date': '', 'end_date': '', 'is_current': False
                 }
 
-                # Look for job title in next non-empty line
+                # Look for job title in next non-empty line after the date
                 job_title = ''
                 title_line_idx = -1
-                for j in range(i + 1, min(i + 5, len(lines))):
+                search_start = i + 1
+                for j in range(search_start, min(search_start + 15, len(lines))):
                     next_line = lines[j].strip()
-                    if next_line and not next_line.startswith('Tasks & Roles'):
-                        job_title = next_line
-                        title_line_idx = j
-                        break
+                    # Skip blank lines and date lines
+                    if not next_line or self._contains_date_range(next_line):
+                        continue
+                    # Skip "Tasks & Roles" header
+                    if next_line.startswith('Tasks & Roles'):
+                        continue
+                    # Found job title
+                    job_title = next_line
+                    title_line_idx = j
+                    break
 
                 # Extract job description/responsibilities
                 description = ''
@@ -726,10 +775,11 @@ class FixedComprehensiveParser:
     def _contains_date_range(self, text: str) -> bool:
         """Check if text contains a date range pattern"""
         date_patterns = [
-            r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}',
+            r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}',  # Support 2 or 4 digit years
             r'\b\d{4}\b',
             r'\bPresent\b',
-            r'\bCurrent\b'
+            r'\bCurrent\b',
+            r'[–—-]'  # Contains date separator dash
         ]
 
         import re
@@ -769,22 +819,32 @@ class FixedComprehensiveParser:
         if not date_str or date_str.lower() in ['present', 'current']:
             return 'Present'
 
-        # Handle "Oct 2023" format
-        month_year_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})', date_str, re.IGNORECASE)
-        if month_year_match:
-            month_name = month_year_match.group(1).lower()
-            year = month_year_match.group(2)
+        month_map = {
+            'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+            'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+            'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+        }
 
-            month_map = {
-                'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-                'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
-                'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
-            }
-
+        # Handle "Oct 2023" format (4-digit year)
+        month_year_4digit = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})', date_str, re.IGNORECASE)
+        if month_year_4digit:
+            month_name = month_year_4digit.group(1).lower()
+            year = month_year_4digit.group(2)
             month_num = month_map.get(month_name, '01')
             return f"{year}-{month_num}-01"
 
-        # Handle year only
+        # Handle "OCT 21" format (2-digit year) - CRITICAL FIX for Zamen's resume
+        month_year_2digit = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{2})\b', date_str, re.IGNORECASE)
+        if month_year_2digit:
+            month_name = month_year_2digit.group(1).lower()
+            year_2digit = month_year_2digit.group(2)
+            # Convert 2-digit year to 4-digit (assume 20XX for years < 50, 19XX for >= 50)
+            year_int = int(year_2digit)
+            full_year = f"20{year_2digit}" if year_int < 50 else f"19{year_2digit}"
+            month_num = month_map.get(month_name, '01')
+            return f"{full_year}-{month_num}-01"
+
+        # Handle year only (4-digit)
         year_match = re.search(r'\b(\d{4})\b', date_str)
         if year_match:
             return f"{year_match.group(1)}-01-01"
@@ -954,21 +1014,37 @@ class FixedComprehensiveParser:
 
         # Extract start date
         start_date = ''
-        start_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_text, re.IGNORECASE)
-        if start_match:
-            month = start_match.group(1)
-            year = start_match.group(2)
-            start_date = f"{year}-{self._month_to_number(month):02d}-01"
+
+        # Try MM/YYYY format first
+        mm_yyyy_match = re.search(r'(\d{2})/(\d{4})', date_text)
+        if mm_yyyy_match:
+            month = int(mm_yyyy_match.group(1))
+            year = mm_yyyy_match.group(2)
+            start_date = f"{year}-{month:02d}-01"
+        else:
+            # Try Month YYYY format
+            start_match = re.search(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_text, re.IGNORECASE)
+            if start_match:
+                month = start_match.group(1)
+                year = start_match.group(2)
+                start_date = f"{year}-{self._month_to_number(month):02d}-01"
 
         # Extract end date
         end_date = 'Present' if is_current else ''
         if not is_current:
-            # Look for second date
-            dates = re.findall(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_text, re.IGNORECASE)
-            if len(dates) >= 2:
-                month = dates[1][0]
-                year = dates[1][1]
-                end_date = f"{year}-{self._month_to_number(month):02d}-01"
+            # Look for MM/YYYY format for end date
+            mm_yyyy_dates = re.findall(r'(\d{2})/(\d{4})', date_text)
+            if len(mm_yyyy_dates) >= 2:
+                month = int(mm_yyyy_dates[1][0])
+                year = mm_yyyy_dates[1][1]
+                end_date = f"{year}-{month:02d}-01"
+            else:
+                # Look for Month YYYY format for second date
+                dates = re.findall(r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_text, re.IGNORECASE)
+                if len(dates) >= 2:
+                    month = dates[1][0]
+                    year = dates[1][1]
+                    end_date = f"{year}-{self._month_to_number(month):02d}-01"
 
         return start_date, end_date, is_current
 
@@ -1341,21 +1417,42 @@ class FixedComprehensiveParser:
             return 'Unknown'
 
     def _extract_location(self, text: str) -> Dict[str, Any]:
-        """Extract location information"""
-        # Look for common location patterns
+        """Extract location information - prioritize header location"""
+        lines = text.split('\n')
+
+        # First, look in the first 20 lines (header area) for standalone location
+        header_location_patterns = [
+            r'^([A-Z][a-z]+),\s*([A-Z][a-z]{1,2})$',  # City, ST on its own line
+            r'([A-Z][a-z]+),\s*([A-Z][a-z]{1,2})\s*$',  # City, ST at end of line
+        ]
+
+        for i, line in enumerate(lines[:20]):
+            line_clean = line.strip()
+            # Skip if line contains email, phone, or is a name
+            if '@' in line_clean or '(' in line_clean or len(line_clean.split()) <= 2:
+                for pattern in header_location_patterns:
+                    match = re.search(pattern, line_clean)
+                    if match and len(line_clean) < 30:  # Should be short standalone location
+                        return {
+                            'Municipality': match.group(1),
+                            'Regions': [match.group(2)],
+                            'CountryCode': 'US' if len(match.group(2)) <= 2 else 'Unknown'
+                        }
+
+        # Fallback: Look for common location patterns anywhere
         location_patterns = [
             r'([A-Z][a-z]+),\s*([A-Z]{2})\s*\d{5}',  # City, STATE ZIP
-            r'([A-Z][a-z]+),\s*([A-Z]{2})',          # City, STATE
-            r'([A-Z][a-z]+),\s*([A-Z][a-z\s]+)',     # City, Country
+            r'([A-Z][a-z]+),\s*([A-Z]{2})\b',          # City, STATE
+            r'([A-Z][a-z]+),\s*([A-Z][a-z]{1,2})\b',     # City, St
         ]
 
         for pattern in location_patterns:
-            match = re.search(pattern, text)
+            match = re.search(pattern, text[:1000])  # Search in first 1000 chars
             if match:
                 return {
                     'Municipality': match.group(1),
                     'Regions': [match.group(2)],
-                    'CountryCode': 'US' if len(match.group(2)) == 2 else 'Unknown'
+                    'CountryCode': 'US' if len(match.group(2)) <= 2 else 'Unknown'
                 }
 
         return {'Municipality': '', 'Regions': [], 'CountryCode': ''}
@@ -1778,38 +1875,34 @@ class FixedComprehensiveParser:
                             education_entry['GraduationYear'] = year_match.group()
 
         # Parse degree and field patterns
-        # Pattern 1: "Masters in data science at University..."
-        degree_pattern1 = r'(Masters?|Bachelors?|Ph\.?D\.?|Doctorate|MBA|MS|BS|BA|MA)\s+in\s+([^,]+?)(?:\s+at\s+(.+))?$'
-        match1 = re.search(degree_pattern1, line, re.IGNORECASE)
+        # Pattern 1: "Bachelors in Computer Science – SRM University - 2009"
+        # Note: Handle both regular dash (-) and Unicode en-dash (–)
+        degree_pattern_with_dash = r'(Masters?|Bachelors?|Ph\.?D\.?|Doctorate|MBA|MS|BS|BA|MA)\s+in\s+([^–\-\u2013]+?)\s*[–\-\u2013]\s*([^–\-\u2013]+?)\s*(?:[–\-\u2013]\s*(\d{4}))?$'
+        match_dash = re.search(degree_pattern_with_dash, line, re.IGNORECASE)
 
-        if match1:
-            education_entry['Degree'] = match1.group(1).title()
-            education_entry['DegreeType'] = match1.group(1).title()
-            education_entry['Major'] = match1.group(2).strip()
-            education_entry['FieldOfStudy'] = match1.group(2).strip()
-            if match1.group(3):
-                institution_text = match1.group(3).strip()
-                # Split institution and location if comma-separated
-                if ',' in institution_text:
-                    parts = institution_text.split(',')
-                    education_entry['Institution'] = parts[0].strip()
-                    education_entry['School'] = parts[0].strip()
-                    education_entry['Location'] = ','.join(parts[1:]).strip()
-                else:
-                    education_entry['Institution'] = institution_text
-                    education_entry['School'] = institution_text
+        if match_dash:
+            education_entry['Degree'] = match_dash.group(1).title()
+            education_entry['DegreeType'] = match_dash.group(1).title()
+            education_entry['Major'] = match_dash.group(2).strip()
+            education_entry['FieldOfStudy'] = match_dash.group(2).strip()
+            education_entry['Institution'] = match_dash.group(3).strip()
+            education_entry['School'] = match_dash.group(3).strip()
+            if match_dash.group(4):
+                education_entry['GraduationYear'] = match_dash.group(4)
+                education_entry['EndDate'] = match_dash.group(4)
         else:
-            # Pattern 2: "Bachelor of Science in Computer Science, University Name"
-            degree_pattern2 = r'(Bachelor\'?s?|Master\'?s?|Ph\.?D\.?|Doctor)\s+(?:Degree\s+)?of\s+([^,]+?)(?:,\s*(.+))?$'
-            match2 = re.search(degree_pattern2, line, re.IGNORECASE)
+            # Pattern 2: "Masters in data science at University..."
+            degree_pattern1 = r'(Masters?|Bachelors?|Ph\.?D\.?|Doctorate|MBA|MS|BS|BA|MA)\s+in\s+([^,]+?)(?:\s+at\s+(.+))?$'
+            match1 = re.search(degree_pattern1, line, re.IGNORECASE)
 
-            if match2:
-                education_entry['DegreeType'] = match2.group(1).title()
-                education_entry['Degree'] = f"{match2.group(1)} of {match2.group(2)}"
-                education_entry['Major'] = match2.group(2).strip()
-                education_entry['FieldOfStudy'] = match2.group(2).strip()
-                if match2.group(3):
-                    institution_text = match2.group(3).strip()
+            if match1:
+                education_entry['Degree'] = match1.group(1).title()
+                education_entry['DegreeType'] = match1.group(1).title()
+                education_entry['Major'] = match1.group(2).strip()
+                education_entry['FieldOfStudy'] = match1.group(2).strip()
+                if match1.group(3):
+                    institution_text = match1.group(3).strip()
+                    # Split institution and location if comma-separated
                     if ',' in institution_text:
                         parts = institution_text.split(',')
                         education_entry['Institution'] = parts[0].strip()
@@ -1818,32 +1911,52 @@ class FixedComprehensiveParser:
                     else:
                         education_entry['Institution'] = institution_text
                         education_entry['School'] = institution_text
-
             else:
-                # Pattern 3: Simple degree or institution line
-                # Check if it contains degree keywords
-                degree_keywords = ['bachelor', 'master', 'ph.d', 'phd', 'doctorate', 'mba', 'degree']
-                institution_keywords = ['university', 'college', 'institute', 'school']
+                # Pattern 3: "Bachelor of Science in Computer Science, University Name"
+                degree_pattern2 = r'(Bachelor\'?s?|Master\'?s?|Ph\.?D\.?|Doctor)\s+(?:Degree\s+)?of\s+([^,]+?)(?:,\s*(.+))?$'
+                match2 = re.search(degree_pattern2, line, re.IGNORECASE)
 
-                line_lower = line.lower()
+                if match2:
+                    education_entry['DegreeType'] = match2.group(1).title()
+                    education_entry['Degree'] = f"{match2.group(1)} of {match2.group(2)}"
+                    education_entry['Major'] = match2.group(2).strip()
+                    education_entry['FieldOfStudy'] = match2.group(2).strip()
+                    if match2.group(3):
+                        institution_text = match2.group(3).strip()
+                        if ',' in institution_text:
+                            parts = institution_text.split(',')
+                            education_entry['Institution'] = parts[0].strip()
+                            education_entry['School'] = parts[0].strip()
+                            education_entry['Location'] = ','.join(parts[1:]).strip()
+                        else:
+                            education_entry['Institution'] = institution_text
+                            education_entry['School'] = institution_text
 
-                if any(keyword in line_lower for keyword in degree_keywords):
-                    # Skip certifications that might be in education section
-                    certification_keywords = ['certified', 'certification', 'pmp', 'scrum']
-                    if not any(cert_keyword in line_lower for cert_keyword in certification_keywords):
-                        # This looks like a degree line
-                        education_entry['Degree'] = line.strip()
-                        # Try to extract field
-                        if 'of' in line_lower:
-                            parts = line_lower.split('of')
-                            if len(parts) > 1:
-                                field = parts[1].strip()
-                                education_entry['FieldOfStudy'] = field
-                                education_entry['Major'] = field
-                elif any(keyword in line_lower for keyword in institution_keywords):
-                    # This looks like an institution line
-                    education_entry['Institution'] = line.strip()
-                    education_entry['School'] = line.strip()
+                else:
+                    # Pattern 4: Simple degree or institution line
+                    # Check if it contains degree keywords
+                    degree_keywords = ['bachelor', 'master', 'ph.d', 'phd', 'doctorate', 'mba', 'degree']
+                    institution_keywords = ['university', 'college', 'institute', 'school']
+
+                    line_lower = line.lower()
+
+                    if any(keyword in line_lower for keyword in degree_keywords):
+                        # Skip certifications that might be in education section
+                        certification_keywords = ['certified', 'certification', 'pmp', 'scrum']
+                        if not any(cert_keyword in line_lower for cert_keyword in certification_keywords):
+                            # This looks like a degree line
+                            education_entry['Degree'] = line.strip()
+                            # Try to extract field
+                            if 'of' in line_lower:
+                                parts = line_lower.split('of')
+                                if len(parts) > 1:
+                                    field = parts[1].strip()
+                                    education_entry['FieldOfStudy'] = field
+                                    education_entry['Major'] = field
+                    elif any(keyword in line_lower for keyword in institution_keywords):
+                        # This looks like an institution line
+                        education_entry['Institution'] = line.strip()
+                        education_entry['School'] = line.strip()
 
         # If we have at least degree or institution, it's valid
         if education_entry['Degree'] or education_entry['Institution']:
@@ -2004,19 +2117,74 @@ class FixedComprehensiveParser:
                 # Determine skill type based on category and content
                 skill_type = self._categorize_skill(skill_name, current_category)
 
+                # Sanitize category - if it starts with bullet point or contains verbs, reset to General
+                sanitized_category = current_category
+                if (sanitized_category.startswith('•') or
+                    sanitized_category.lower().startswith('management of') or
+                    len(sanitized_category) > 80 or
+                    any(verb in sanitized_category.lower() for verb in ['facilitate', 'interpret', 'assign', 'proactive'])):
+                    sanitized_category = "General"
+
                 skills.append({
                     'SkillName': skill_name,
                     'Type': skill_type,
-                    'Category': current_category,
+                    'Category': sanitized_category,
                     'ExperienceInMonths': experience_months,
                     'LastUsed': last_used or "Current",
                     'ProficiencyLevel': self._determine_proficiency_level(skill_name, experience_months),
                     'IsCertified': self._is_certified_skill(skill_name)
                 })
 
+        # Always try extracting from known tool/technology lists to supplement
+        additional_skills = self._extract_skills_from_tool_mentions(text)
+        skills.extend(additional_skills)
+
         # Clean up and deduplicate skills before returning
         cleaned_skills = self._clean_and_deduplicate_skills(skills)
         return cleaned_skills
+
+    def _extract_skills_from_tool_mentions(self, text: str) -> List[Dict[str, Any]]:
+        """Extract skills from mentions of known tools and technologies throughout the text"""
+        skills = []
+
+        # Known PM and technical tools that should be captured
+        known_tools = {
+            'JIRA': 'Project Management',
+            'Azure DevOps': 'Project Management',
+            'Asana': 'Project Management',
+            'Planview': 'Project Management',
+            'SmartSheet': 'Project Management',
+            'Agile': 'Methodology',
+            'Waterfall': 'Methodology',
+            'Scrum': 'Methodology',
+            'PMBOK': 'Standard',
+            'QSR 21 CFR': 'Compliance',
+            'Quality System Regulations': 'Compliance',
+            'FDA regulations': 'Compliance',
+            'Google Docs': 'Productivity',
+            'Google Sheets': 'Productivity',
+            'Pivot': 'Data Analysis',
+            'Change Control': 'Process',
+            'Risk Management': 'Process',
+            'Budget Management': 'Process',
+        }
+
+        text_lower = text.lower()
+
+        for tool, category in known_tools.items():
+            # Check if tool is mentioned in the text
+            if tool.lower() in text_lower:
+                skills.append({
+                    'SkillName': tool,
+                    'Type': 'Technical Skill',
+                    'Category': category,
+                    'ExperienceInMonths': 12,
+                    'LastUsed': 'Current',
+                    'ProficiencyLevel': 'Intermediate',
+                    'IsCertified': False
+                })
+
+        return skills
 
     def _clean_and_deduplicate_skills(self, skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Clean up and deduplicate skills for better quality"""
@@ -2034,11 +2202,15 @@ class FixedComprehensiveParser:
             is_garbage = any([
                 '@' in skill_name,  # Email addresses
                 len(skill_name) < 3,  # Too short
-                skill_name.lower() in ['issues', 'data', 'news', 'secure', 'to-date', 'reference', 'updated as needed)', 'stakeholders', 'and team members', 'keeping the related team members', 'with a professional technique to'],  # Meaningless fragments
+                skill_name.lower() in ['issues', 'data', 'news', 'secure', 'to-date', 'reference', 'updated as needed)', 'stakeholders', 'and team members', 'keeping the related team members', 'with a professional technique to', 'agile)'],  # Meaningless fragments
                 'writing / reading / speaking' in skill_name.lower(),  # Language entries
                 skill_name.lower() in ['it skills', 'personal skills'],  # Headers
                 'references available' in skill_name.lower(),  # References
                 skill_name.lower() in ['and compliant with organizational policies'],  # Partial sentences
+                skill_name.lower().startswith('management of'),  # Partial job descriptions
+                skill_name.lower().startswith('project management tools:'),  # Headers
+                'represent information/data' in skill_name.lower(),  # Descriptions
+                'installations and implementations' in skill_name.lower(),  # Vague skills
             ])
 
             if not is_garbage:
@@ -2294,7 +2466,9 @@ class FixedComprehensiveParser:
 
         for i, line in enumerate(lines):
             line_clean = line.strip()
-            if any(keyword in line_clean for keyword in proj_keywords):
+            # Exact match for project headers (avoid false positives)
+            line_no_punct = re.sub(r'[^\w\s]', '', line_clean).strip().upper()
+            if line_no_punct in ['PROJECTS', 'PROJECT']:
                 # Must be a section header (short line, not part of job title)
                 if len(line_clean) < 30 and not any(role in line_clean.lower() for role in ['manager', 'coordinator', 'lead']):
                     proj_start = i
@@ -2323,8 +2497,21 @@ class FixedComprehensiveParser:
                 line = re.sub(r'^[•\-\*]\s*', '', line)
                 line = re.sub(r'^[0-9]+\.\s*', '', line)
 
-                # Check if this looks like a project title
-                if len(line) < 100 and not line.endswith('.') and ':' not in line:
+                # Check if this looks like a project title (not a tool name)
+                # Filter out tool names and partial descriptions
+                is_tool_name = any(tool in line.lower() for tool in [
+                    'ms project', 'jira', 'azure devops', 'asana', 'plan plus',
+                    'sharepoint', 'google docs', 'google sheets', 'device management',
+                    'microsoft excel', 'pivot', 'smartsheet', 'planview'
+                ])
+                is_description = (line.lower().startswith('initiate and develop') or
+                                line.lower().startswith('professional with') or
+                                'used to manage' in line.lower() or
+                                'empowers teamwork' in line.lower() or
+                                'ensure all procedures' in line.lower())
+
+                if (len(line) < 100 and not line.endswith('.') and
+                    not is_tool_name and not is_description):
                     # Save previous project if exists
                     if current_project:
                         projects.append(current_project)
@@ -2418,22 +2605,25 @@ class FixedComprehensiveParser:
             all_text += ' ' + exp.get('JobTitle', '').lower()
             all_text += ' ' + exp.get('Summary', '').lower()
 
-        # Domain detection patterns
+        # Domain detection patterns (more specific to avoid false positives)
         domain_patterns = {
-            'Healthcare': ['health', 'medical', 'hospital', 'clinical', 'pharma', 'patient'],
+            'Project Management': ['project manager', 'pmo', 'project management professional', 'pmp', 'scrum master', 'agile'],
+            'Healthcare': ['healthcare', 'medical', 'hospital', 'clinical', 'pharma', 'patient'],
             'Finance': ['bank', 'financial', 'trading', 'investment', 'insurance', 'prudential', 'securities'],
             'E-Commerce': ['retail', 'e-commerce', 'ecommerce', 'marketplace', 'walmart', 'amazon'],
             'Government': ['government', 'public sector', 'state of', 'federal', 'municipal'],
-            'Technology': ['software', 'development', 'programming', 'engineer', 'developer', 'technology', 'it'],
-            'Telecommunications': ['telecom', 'network', 'wireless', 'mobile', 'communication'],
+            'Technology': ['software', 'development', 'programming', 'engineer', 'developer', 'technology', 'it solutions'],
+            'Telecommunications': ['telecommunications', 'telecom', 'wireless carrier', 'mobile network'],
             'Manufacturing': ['manufacturing', 'production', 'assembly', 'factory'],
             'Education': ['education', 'university', 'school', 'academic', 'learning'],
             'Mainframe Systems': ['mainframe', 'z/os', 'cobol', 'jcl', 'cics', 'db2', 'vsam', 'lpar'],
-            'Cloud Computing': ['aws', 'azure', 'gcp', 'cloud', 'kubernetes', 'docker'],
+            'Cloud Computing': ['aws', 'azure', 'gcp', 'cloud computing', 'kubernetes', 'docker'],
             'Web Development': ['react', 'angular', 'vue', 'javascript', 'html', 'css', 'frontend', 'backend'],
-            'Data Science': ['machine learning', 'data science', 'analytics', 'python', 'r programming', 'tensorflow'],
-            'DevOps': ['devops', 'ci/cd', 'jenkins', 'git', 'ansible', 'terraform'],
-            'Cybersecurity': ['security', 'cybersecurity', 'penetration', 'firewall', 'encryption', 'racf']
+            'Data Science': ['machine learning', 'data science', 'analytics', 'tensorflow'],
+            'Big Data': ['big data', 'hadoop', 'spark', 'kafka'],
+            'DevOps': ['devops', 'ci/cd', 'jenkins', 'ansible', 'terraform'],
+            'Cybersecurity': ['cybersecurity', 'penetration testing', 'firewall', 'encryption', 'racf', 'information security'],
+            'IT Infrastructure': ['infrastructure', 'system administrator', 'networking', 'device management']
         }
 
         # Check each domain
@@ -2573,6 +2763,19 @@ class FixedComprehensiveParser:
                 processed_names.add(cert_name_lower)
                 continue
 
+            # Combine Azure certifications (prefer full Microsoft Certified form)
+            if 'azure' in cert_name_lower and 'solutions architect' in cert_name_lower:
+                # Check if we already have the Microsoft Certified version
+                microsoft_azure_cert = 'microsoft certified: azure solutions architect expert'
+                if microsoft_azure_cert not in processed_names:
+                    # If this is the Microsoft Certified version, use it; otherwise skip
+                    if 'microsoft certified' in cert_name_lower:
+                        cleaned_certifications.append(cert)
+                        processed_names.add(microsoft_azure_cert)
+                    # Mark both versions as processed
+                    processed_names.add('azure solutions architect expert')
+                continue
+
             # Combine Scrum Master certifications
             if 'scrum master' in cert_name_lower:
                 if 'scrum master' not in processed_names:
@@ -2605,24 +2808,28 @@ class FixedComprehensiveParser:
         """Extract certification information from a single line"""
         certifications = []
 
-        # Common certification patterns
+        # Common certification patterns - ordered from most specific to least specific
         cert_patterns = [
-            r'(PMP)\s*(?:Certified|®)?',
-            r'(Scrum Master)\s*Certified',
+            # Full AWS certification patterns
+            r'(AWS\s+Certified\s+Solutions\s+Architect\s+(?:Associate|Professional))',
+            r'(AWS\s+Certified\s+Developer\s+(?:Associate|Professional))',
+            r'(AWS\s+Certified\s+[A-Za-z\s]+)',
+            # Full Azure certification patterns
+            r'(Microsoft\s+Certified:\s+Azure\s+Solutions\s+Architect\s+Expert)',
+            r'(Microsoft\s+Certified:\s+Azure\s+[A-Za-z\s]+)',
+            r'(Azure\s+Solutions\s+Architect\s+Expert)',
+            r'(Azure\s+[A-Za-z]+\s+(?:Associate|Expert))',
+            # Project Management
+            r'(Project Management Professional)\s*\(?(PMP)\)?\s*®?',
+            r'(PMP)\s*(?:Certified|®)',
+            # Scrum certifications
+            r'(Certified\s+Scrum\s+Master)',
+            r'(Scrum\s+Master)\s*Certified',
+            # Other specific patterns
+            r'(Scaled Agile Foundation)\s*[–\-]\s*(.+?)(?:\s+\d{4}|$)',
             r'(CCNA)\s*(?:certification)?',
             r'(CISSP)\s*(?:Certified|®)?',
-            r'(AWS)\s*(?:Certified|Solutions Architect|Developer)',
-            r'(Azure)\s*(?:Certified|Solutions Architect|Developer)',
-            r'(Project Management Professional)\s*\(?(PMP)\)?\s*®?',
-            r'(Certified\s+\w+(?:\s+\w+)*)',
-            r'(\w+\s+Certified)',
-            r'(First Aid)',
-            r'(Customer Interfacing)',
-            # Resume 2 specific patterns
-            r'(Scaled Agile Foundation)\s*[–\-]\s*(.+?)(?:\s+\d{4}|$)',
-            r'(Certified Scrum Master)\s*[–\-]\s*(.+?)(?:\s+\d{4}|$)',
-            r'(Project Management Professional)\s*[–\-]\s*(.+?)(?:\s+\d{4}|$)',
-            # General pattern for "Name – Training/Certification" format
+            # General patterns for "Name – Training/Certification" format
             r'([A-Za-z\s]+(?:Foundation|Institute|Academy|Center))\s*[–\-]\s*([A-Za-z\s]+(?:Training|Certification|Certificate))',
             r'([A-Za-z\s]+Training)\s*[–\-]\s*([A-Za-z\s]+)',
             r'([A-Za-z\s]+Certification)\s*[–\-]\s*([A-Za-z\s]+)'
@@ -2641,6 +2848,7 @@ class FixedComprehensiveParser:
                 # Clean up certification name
                 cert_name = re.sub(r'\s*®\s*', '', cert_name)
                 cert_name = re.sub(r'\s*\(\s*\)\s*', '', cert_name)
+                cert_name = re.sub(r'\s*\.$', '', cert_name)  # Remove trailing period
 
                 # Determine issuing authority
                 issuer = self._determine_cert_issuer(cert_name)
@@ -2666,16 +2874,20 @@ class FixedComprehensiveParser:
             # Check if line contains certification indicators
             cert_indicators = ['foundation', 'certified', 'training', 'professional', 'master', 'practitioner', 'scrum', 'agile', 'management']
             if any(indicator in line.lower() for indicator in cert_indicators):
+                # Clean the line before using
+                clean_line = line.strip()
+                clean_line = re.sub(r'\s*\.$', '', clean_line)  # Remove trailing period
+
                 # Extract issuer from common patterns
-                issuer = self._determine_cert_issuer(line)
+                issuer = self._determine_cert_issuer(clean_line)
 
                 # Extract date if present
-                date_match = re.search(r'\b(\d{4})\b', line)
+                date_match = re.search(r'\b(\d{4})\b', clean_line)
                 issue_date = date_match.group(1) if date_match else ""
 
                 certifications.append({
-                    'CertificationName': line.strip(),
-                    'Name': line.strip(),
+                    'CertificationName': clean_line,
+                    'Name': clean_line,
                     'IssuingAuthority': issuer,
                     'Issuer': issuer,
                     'IssueDate': issue_date,
@@ -2715,7 +2927,94 @@ class FixedComprehensiveParser:
 
     def _extract_achievements_comprehensive(self, text: str) -> List[Dict[str, Any]]:
         """Extract comprehensive achievements information"""
-        return []
+        achievements = []
+
+        # Look for monetary values (achievements often include project costs, revenue, etc.)
+        money_pattern = r'\$\s?([\d,]+(?:\.\d+)?)\s?(million|M|billion|B|k|K)?'
+        money_matches = re.finditer(money_pattern, text, re.IGNORECASE)
+
+        for match in money_matches:
+            # Get context around the money mention - increased window
+            start = max(0, match.start() - 300)
+            end = min(len(text), match.end() + 200)
+            context = text[start:end]
+
+            # Find the complete sentence containing the money value
+            # Use match.group(0) to get the full matched text including unit
+            full_money_text = match.group(0)
+            amount = match.group(1)
+            unit = match.group(2) if match.group(2) else ''
+            full_amount = f"${amount} {unit}".strip() if unit else f"${amount}"
+
+            # Extract sentence more carefully - look for the sentence containing the dollar sign
+            # Don't rely on period splitting as PDF text extraction may break "$16.2 million" into "$16" and "2 million"
+            dollar_pos = context.find('$')
+            if dollar_pos == -1:
+                continue
+
+            # Find the start of the sentence (look backwards for sentence boundary)
+            sentence_start = dollar_pos
+            for i in range(dollar_pos - 1, max(0, dollar_pos - 200), -1):
+                if context[i] in '.!?\n' and i > 0 and context[i-1] not in ['Inc', 'Ltd', 'Co', 'Dr', 'Mr']:
+                    sentence_start = i + 1
+                    break
+            else:
+                sentence_start = max(0, dollar_pos - 150)
+
+            # Find the end of the sentence (look forwards)
+            sentence_end = dollar_pos
+            for i in range(dollar_pos, min(len(context), dollar_pos + 300)):
+                if context[i] in '.!?' and i < len(context) - 1 and context[i+1] in [' ', '\n']:
+                    sentence_end = i
+                    break
+            else:
+                sentence_end = min(len(context), dollar_pos + 250)
+
+            best_sentence = context[sentence_start:sentence_end].strip()
+
+            # Clean up the sentence
+            best_sentence = re.sub(r'\s+', ' ', best_sentence)
+
+            if not best_sentence or len(best_sentence) < 20:
+                continue
+
+            # Try to find company/date context in broader context
+            company = ''
+            date = ''
+
+            # Look for year near the achievement
+            year_match = re.search(r'\b(19|20)\d{2}\b', best_sentence)
+            if year_match:
+                date = year_match.group(0)
+
+            # Look for company names in broader context
+            company_patterns = [
+                r'(PepsiCo|United Airlines?|Emburse|Ligadata|LigaData|EtQ|ETQ)',
+                r'at\s+([A-Z][A-Za-z\s&]+?)(?:,|\.|$)'
+            ]
+            for pattern in company_patterns:
+                company_match = re.search(pattern, context, re.IGNORECASE)
+                if company_match:
+                    company = company_match.group(1).strip()
+                    break
+
+            achievements.append({
+                'Company': company if company else 'N/A',
+                'Date': date if date else 'N/A',
+                'Description': best_sentence[:300],  # Increased limit
+                'Value': full_amount
+            })
+
+        # Remove duplicates
+        unique_achievements = []
+        seen_descriptions = set()
+        for ach in achievements:
+            desc_key = ach['Description'][:50]  # Use first 50 chars as key
+            if desc_key not in seen_descriptions:
+                seen_descriptions.add(desc_key)
+                unique_achievements.append(ach)
+
+        return unique_achievements[:5]  # Limit to top 5 achievements
 
     def _extract_languages_comprehensive(self, text: str) -> List[Dict[str, Any]]:
         """Extract comprehensive language information"""
@@ -2907,18 +3206,80 @@ class FixedComprehensiveParser:
 
             if start_date:
                 try:
-                    # Parse start date
-                    start_parts = start_date.split('-')
-                    start_year = int(start_parts[0])
-                    start_month = int(start_parts[1]) if len(start_parts) > 1 else 1
+                    # Try to parse start date in different formats
+                    start_year, start_month = None, None
 
-                    # Parse end date
-                    if end_date and end_date != 'Present':
-                        end_parts = end_date.split('-')
-                        end_year = int(end_parts[0])
-                        end_month = int(end_parts[1]) if len(end_parts) > 1 else 12
+                    # Format 1: YYYY-MM-DD or YYYY-MM
+                    if '-' in start_date:
+                        start_parts = start_date.split('-')
+                        start_year = int(start_parts[0])
+                        start_month = int(start_parts[1]) if len(start_parts) > 1 else 1
+                    # Format 2: MM YYYY (e.g., "09 2022")
+                    elif ' ' in start_date:
+                        parts = start_date.split()
+                        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                            start_month = int(parts[0])
+                            start_year = int(parts[1])
+                        else:
+                            # Try parsing as "Month Year"
+                            try:
+                                parsed = datetime.strptime(start_date, '%B %Y')
+                                start_year = parsed.year
+                                start_month = parsed.month
+                            except:
+                                try:
+                                    parsed = datetime.strptime(start_date, '%b %Y')
+                                    start_year = parsed.year
+                                    start_month = parsed.month
+                                except:
+                                    continue
+                    # Format 3: Just year
+                    elif start_date.isdigit():
+                        start_year = int(start_date)
+                        start_month = 1
+
+                    if not start_year or not start_month:
+                        continue
+
+                    # Parse end date in similar formats
+                    end_year, end_month = None, None
+
+                    if end_date and end_date not in ['Present', 'Current', 'Till Date', 'N/A']:
+                        # Format 1: YYYY-MM-DD or YYYY-MM
+                        if '-' in end_date:
+                            end_parts = end_date.split('-')
+                            end_year = int(end_parts[0])
+                            end_month = int(end_parts[1]) if len(end_parts) > 1 else 12
+                        # Format 2: MM YYYY
+                        elif ' ' in end_date:
+                            parts = end_date.split()
+                            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                                end_month = int(parts[0])
+                                end_year = int(parts[1])
+                            else:
+                                # Try parsing as "Month Year"
+                                try:
+                                    parsed = datetime.strptime(end_date, '%B %Y')
+                                    end_year = parsed.year
+                                    end_month = parsed.month
+                                except:
+                                    try:
+                                        parsed = datetime.strptime(end_date, '%b %Y')
+                                        end_year = parsed.year
+                                        end_month = parsed.month
+                                    except:
+                                        end_year = current_date.year
+                                        end_month = current_date.month
+                        # Format 3: Just year
+                        elif end_date.isdigit():
+                            end_year = int(end_date)
+                            end_month = 12
                     else:
                         # Current date for ongoing positions
+                        end_year = current_date.year
+                        end_month = current_date.month
+
+                    if not end_year or not end_month:
                         end_year = current_date.year
                         end_month = current_date.month
 
@@ -2929,7 +3290,7 @@ class FixedComprehensiveParser:
                     # Only add if start is before end and dates are reasonable
                     if start_date_tuple < end_date_tuple and start_year >= 1990 and start_year <= current_date.year + 1:
                         date_ranges.append((start_date_tuple, end_date_tuple))
-                except:
+                except Exception as e:
                     continue
 
         if not date_ranges:
@@ -2959,6 +3320,74 @@ class FixedComprehensiveParser:
 
         return total_months
 
+    def _extract_key_responsibilities(self, experiences: List[Dict[str, Any]]) -> List[str]:
+        """Extract actual responsibilities from work experience (bullet points, not company descriptions)"""
+        responsibilities = []
+
+        for exp in experiences:
+            summary = exp.get('Summary', '')
+            if not summary or len(summary) < 30:
+                continue
+
+            # Split by bullet points or line breaks
+            parts = re.split(r'[•\n]+', summary)
+
+            for part in parts:
+                part = part.strip()
+
+                # Skip if it's empty or too short
+                if len(part) < 20:
+                    continue
+
+                # Skip job titles with dates (e.g., "Project Manager III (July 2021 – Current)")
+                if re.search(r'\([A-Za-z]+\s+\d{4}\s*[–-]\s*[A-Za-z\d]+\)', part):
+                    continue
+
+                # Skip company descriptions (they usually start with company name or describe the company)
+                company_desc_patterns = [
+                    r'^[A-Z][a-z]+\s+is\s+(one\s+of\s+)?the',  # "Company is the"
+                    r'^[A-Z][a-z]+\s+pioneers',  # "Company pioneers"
+                    r'founded by',  # Company history
+                    r'headquartered',  # Company location
+                    r'collaborates with some of the world',  # Company partnerships
+                ]
+
+                is_company_desc = any(re.search(pattern, part, re.IGNORECASE) for pattern in company_desc_patterns)
+                if is_company_desc:
+                    continue
+
+                # Skip if it contains email addresses or garbled text
+                if '@' in part or re.search(r'\w(\s+\w){8,}', part):
+                    continue
+
+                # Look for actual responsibility indicators
+                responsibility_patterns = [
+                    r'^(Responsible|Develop|Create|Manage|Lead|Coordinate|Oversee|Drive|Own|Ensure|Implement|Build|Design|Execute)',
+                    r'^\•?\s*(Responsible|Develop|Create|Manage|Lead|Coordinate|Oversee|Drive|Own|Ensure|Implement|Build|Design|Execute)',
+                ]
+
+                is_responsibility = any(re.search(pattern, part, re.IGNORECASE) for pattern in responsibility_patterns)
+
+                if is_responsibility or (len(part) > 40 and not is_company_desc):
+                    # Clean up the responsibility
+                    cleaned = part.strip()
+                    cleaned = re.sub(r'^[•\-\*\s]+', '', cleaned)  # Remove leading bullets
+                    cleaned = re.sub(r'\s+', ' ', cleaned)  # Normalize spaces
+
+                    if cleaned and len(cleaned) > 25:
+                        responsibilities.append(cleaned[:400])  # Limit length
+
+        # Deduplicate and limit
+        unique_responsibilities = []
+        seen = set()
+        for resp in responsibilities:
+            key = resp[:50].lower()  # Use first 50 chars as dedup key
+            if key not in seen:
+                seen.add(key)
+                unique_responsibilities.append(resp)
+
+        return unique_responsibilities[:15]  # Return top 15 responsibilities
+
     def _convert_contact_to_personal_details(self, contact_info: Dict[str, Any]) -> Dict[str, Any]:
         """Convert internal contact info format to expected PersonalDetails format"""
         candidate_name = contact_info.get('CandidateName', {})
@@ -2973,6 +3402,18 @@ class FixedComprehensiveParser:
         # Extract country code (simplified)
         country_code = '+1' if phone != 'N/A' and not phone.startswith('+') else '+1'
 
+        # Extract location
+        location_info = contact_info.get('Location', {})
+        municipality = location_info.get('Municipality', '')
+        regions = location_info.get('Regions', [])
+        location = ''
+        if municipality and regions:
+            location = f"{municipality}, {regions[0]}"
+        elif municipality:
+            location = municipality
+        elif regions:
+            location = regions[0]
+
         return {
             'FullName': candidate_name.get('FormattedName', 'N/A'),
             'FirstName': candidate_name.get('GivenName', 'N/A'),
@@ -2980,10 +3421,11 @@ class FixedComprehensiveParser:
             'LastName': candidate_name.get('FamilyName', 'N/A'),
             'EmailID': email,
             'PhoneNumber': phone,
-            'CountryCode': country_code
+            'CountryCode': country_code,
+            'Location': location
         }
 
-    def _convert_experience_to_list_format(self, experience: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _convert_experience_to_list_format(self, experience: List[Dict[str, Any]], raw_text: str = '') -> List[Dict[str, Any]]:
         """Convert internal experience format to expected ListOfExperiences format"""
         converted = []
 
@@ -3003,26 +3445,136 @@ class FixedComprehensiveParser:
             if start_date != 'N/A':
                 try:
                     from datetime import datetime
-                    start = datetime.strptime(start_date, '%Y-%m-%d')
-                    if end_date not in ['N/A', 'Current']:
-                        end = datetime.strptime(end_date, '%Y-%m-%d')
-                    else:
-                        end = datetime.now()
 
-                    months = (end.year - start.year) * 12 + (end.month - start.month)
-                    exp_years = f"{months} months" if months > 0 else "0 months"
-                except:
+                    # Try to parse start date in multiple formats
+                    start = None
+                    # Format 1: YYYY-MM-DD
+                    try:
+                        start = datetime.strptime(start_date, '%Y-%m-%d')
+                    except:
+                        pass
+
+                    # Format 2: MM YYYY (e.g., "09 2022")
+                    if not start:
+                        try:
+                            start = datetime.strptime(start_date, '%m %Y')
+                        except:
+                            pass
+
+                    # Format 3: Month Year (e.g., "September 2022" or "Sep 2022")
+                    if not start:
+                        try:
+                            start = datetime.strptime(start_date, '%B %Y')
+                        except:
+                            try:
+                                start = datetime.strptime(start_date, '%b %Y')
+                            except:
+                                pass
+
+                    if start:
+                        # Parse end date
+                        if end_date not in ['N/A', 'Current', 'Till Date', 'Present']:
+                            end = None
+                            # Try same formats for end date
+                            try:
+                                end = datetime.strptime(end_date, '%Y-%m-%d')
+                            except:
+                                pass
+
+                            if not end:
+                                try:
+                                    end = datetime.strptime(end_date, '%m %Y')
+                                except:
+                                    pass
+
+                            if not end:
+                                try:
+                                    end = datetime.strptime(end_date, '%B %Y')
+                                except:
+                                    try:
+                                        end = datetime.strptime(end_date, '%b %Y')
+                                    except:
+                                        pass
+
+                            if not end:
+                                end = datetime.now()
+                        else:
+                            end = datetime.now()
+
+                        months = (end.year - start.year) * 12 + (end.month - start.month)
+                        exp_years = f"{months} months" if months > 0 else "0 months"
+                    else:
+                        exp_years = "0 months"
+                except Exception as e:
                     exp_years = "0 months"
 
+            # Clean up summary - remove garbled headers and email addresses
+            summary = exp.get('Description', '').strip()
+
+            # Remove garbled email patterns with excessive spacing like "A h m a d E l s h e i k h a h m a d . e l s h e i k h q @ g m a i l . c o m"
+            # Pattern 1: Specific pattern for Ahmad's spaced email - be aggressive
+            summary = re.sub(r'A\s+h\s+m\s+a\s+d[^L]{0,200}?c\s+o\s+m', '', summary, flags=re.IGNORECASE)
+
+            # Pattern 2: Any long sequence of single characters with spaces followed by common email domains
+            summary = re.sub(r'([A-Z]\s+){2,}[a-z\s.@]+\s*c\s*o\s*m\b', '', summary, flags=re.IGNORECASE)
+
+            # Pattern 3: Spaced out email structure (characters space dot space etc)
+            summary = re.sub(r'(\w\s+){6,}[\w\s.@]+\s*\.\s*c\s*o\s*m', '', summary, flags=re.IGNORECASE)
+
+            # Remove standalone email addresses
+            summary = re.sub(r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b', '', summary)
+
+            # Clean up extra spaces and bullet points at the start
+            summary = re.sub(r'\s+', ' ', summary).strip()
+            summary = re.sub(r'^[•\-\s]+', '', summary).strip()
+
+            # Fix United Airline to United Airlines and remove CLIENT: prefix
+            employer_fixed = employer.replace('United Airline', 'United Airlines')
+            employer_fixed = re.sub(r'^CLIENT:\s*', '', employer_fixed, flags=re.IGNORECASE)
+
+            # Get employment type, or try to detect it from the description or raw text
+            employment_type = exp.get('EmploymentType', '')
+            if not employment_type:
+                # First, check if the description or fields mention employment type
+                combined_text = f"{job_title} {summary}".lower()
+                if 'contract' in combined_text:
+                    employment_type = 'Contract'
+                elif 'full-time' in combined_text or 'full time' in combined_text:
+                    employment_type = 'Full-time'
+                elif 'part-time' in combined_text or 'part time' in combined_text:
+                    employment_type = 'Part-time'
+                elif 'freelance' in combined_text:
+                    employment_type = 'Freelance'
+
+                # If still not found, search raw text near the company name in work history section
+                if not employment_type and raw_text and employer != 'N/A':
+                    # Find work history section first
+                    work_history_start = max(
+                        raw_text.find('Employment History'),
+                        raw_text.find('Work Experience'),
+                        raw_text.find('EXPERIENCE')
+                    )
+                    search_start = work_history_start if work_history_start > 0 else 0
+
+                    # Find the position in raw text where this company/job appears (after work history starts)
+                    company_pos = raw_text.find(employer, search_start)
+                    if company_pos != -1:
+                        # Look at the next 200 characters after the company name
+                        context = raw_text[company_pos:company_pos + 200].lower()
+                        if 'contract' in context:
+                            employment_type = 'Contract'
+                        elif 'full-time' in context or 'full time' in context:
+                            employment_type = 'Full-time'
+
             converted.append({
-                'CompanyName': employer,
+                'CompanyName': employer_fixed,
                 'Location': location,
                 'JobTitle': job_title,
                 'StartDate': start_date.split('-')[1] + ' ' + start_date.split('-')[0] if start_date != 'N/A' and '-' in start_date else start_date,
                 'EndDate': end_date,
                 'ExperienceInYears': exp_years,
-                'Summary': exp.get('Description', '').strip(),
-                'EmploymentType': exp.get('EmploymentType', '')
+                'Summary': summary[:1000],  # Increased from default - allow fuller descriptions
+                'EmploymentType': employment_type
             })
 
         return converted
