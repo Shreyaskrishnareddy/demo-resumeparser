@@ -93,6 +93,14 @@ class FixedComprehensiveParser:
         # Extract professional domains
         domains = self._extract_domain(current_job_role, skills, list_of_experiences)
 
+        # Smart inference: If no projects found, infer from work experience
+        if not projects and list_of_experiences:
+            projects = self._infer_projects_from_experience(list_of_experiences)
+
+        # Smart inference: If no achievements found, extract from work descriptions
+        if not achievements and list_of_experiences:
+            achievements = self._infer_achievements_from_experience(list_of_experiences)
+
         # Ensure ALL 43 expected fields are present in output
         return {
             # Personal Details (8 fields)
@@ -2276,7 +2284,7 @@ class FixedComprehensiveParser:
         return any(cert in skill_name.lower() for cert in certified_skills)
 
     def _extract_projects_comprehensive(self, text: str) -> List[Dict[str, Any]]:
-        """Extract comprehensive project information"""
+        """Extract comprehensive project information - with smart inference"""
         projects = []
         lines = text.split('\n')
 
@@ -2287,64 +2295,63 @@ class FixedComprehensiveParser:
         for i, line in enumerate(lines):
             line_clean = line.strip()
             if any(keyword in line_clean for keyword in proj_keywords):
-                if len(line_clean) < 50 and line_clean.lower() in [kw.lower() for kw in proj_keywords]:
+                # Must be a section header (short line, not part of job title)
+                if len(line_clean) < 30 and not any(role in line_clean.lower() for role in ['manager', 'coordinator', 'lead']):
                     proj_start = i
                     break
 
-        if proj_start == -1:
-            return projects
+        if proj_start != -1:
+            # Found dedicated projects section - extract from it
+            proj_end = len(lines)
+            section_headers = ['EXPERIENCE', 'EMPLOYMENT', 'SKILLS', 'EDUCATION', 'CERTIFICATIONS', 'ACHIEVEMENTS']
 
-        # Find end of projects section
-        proj_end = len(lines)
-        section_headers = ['EXPERIENCE', 'EMPLOYMENT', 'SKILLS', 'EDUCATION', 'CERTIFICATIONS', 'ACHIEVEMENTS']
+            for i in range(proj_start + 1, len(lines)):
+                line_clean = lines[i].strip().upper()
+                if any(header in line_clean for header in section_headers) and len(line_clean) < 50:
+                    proj_end = i
+                    break
 
-        for i in range(proj_start + 1, len(lines)):
-            line_clean = lines[i].strip().upper()
-            if any(header in line_clean for header in section_headers) and len(line_clean) < 50:
-                proj_end = i
-                break
+            # Extract projects from section
+            current_project = None
 
-        # Extract projects from section
-        current_project = None
+            for i in range(proj_start + 1, proj_end):
+                line = lines[i].strip()
+                if not line:
+                    continue
 
-        for i in range(proj_start + 1, proj_end):
-            line = lines[i].strip()
-            if not line:
-                continue
+                # Remove bullets
+                line = re.sub(r'^[•\-\*]\s*', '', line)
+                line = re.sub(r'^[0-9]+\.\s*', '', line)
 
-            # Remove bullets
-            line = re.sub(r'^[•\-\*]\s*', '', line)
-            line = re.sub(r'^[0-9]+\.\s*', '', line)
+                # Check if this looks like a project title
+                if len(line) < 100 and not line.endswith('.') and ':' not in line:
+                    # Save previous project if exists
+                    if current_project:
+                        projects.append(current_project)
 
-            # Check if this looks like a project title (shorter line, potentially followed by description)
-            if len(line) < 100 and not line.endswith('.') and ':' not in line:
-                # Save previous project if exists
-                if current_project:
-                    projects.append(current_project)
+                    # Start new project
+                    current_project = {
+                        'ProjectName': line,
+                        'Name': line,
+                        'Description': '',
+                        'Role': '',
+                        'Client': '',
+                        'Company': '',
+                        'StartDate': '',
+                        'EndDate': '',
+                        'Technologies': [],
+                        'TeamSize': ''
+                    }
+                elif current_project and len(line) > 20:
+                    # Add to description
+                    if current_project['Description']:
+                        current_project['Description'] += ' ' + line
+                    else:
+                        current_project['Description'] = line
 
-                # Start new project
-                current_project = {
-                    'ProjectName': line,
-                    'Name': line,
-                    'Description': '',
-                    'Role': '',
-                    'Client': '',
-                    'Company': '',
-                    'StartDate': '',
-                    'EndDate': '',
-                    'Technologies': [],
-                    'TeamSize': ''
-                }
-            elif current_project and len(line) > 20:
-                # Add to description
-                if current_project['Description']:
-                    current_project['Description'] += ' ' + line
-                else:
-                    current_project['Description'] = line
-
-        # Add final project
-        if current_project:
-            projects.append(current_project)
+            # Add final project
+            if current_project:
+                projects.append(current_project)
 
         return projects
 
@@ -3019,3 +3026,113 @@ class FixedComprehensiveParser:
             })
 
         return converted
+
+    def _infer_projects_from_experience(self, experiences: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Intelligently infer projects from work experience when no dedicated Projects section exists"""
+        projects = []
+
+        # Strategy: Each significant work position can be treated as a project
+        # especially for contractors, consultants, and project-based roles
+        for exp in experiences:
+            job_title = exp.get('JobTitle', '')
+            company = exp.get('CompanyName', '')
+            location = exp.get('Location', '')
+            start_date = exp.get('StartDate', '')
+            end_date = exp.get('EndDate', '')
+            summary = exp.get('Summary', '')
+
+            # Skip if missing key fields
+            if not job_title or not company:
+                continue
+
+            # Create project name from position
+            # E.g., "Project Manager III at United Airline" -> "United Airline - Digital Transformation Project"
+            project_name = f"{company}"
+
+            # Try to extract actual project name from summary if it mentions specific initiatives
+            project_keywords = ['project', 'initiative', 'program', 'migration', 'implementation',
+                              'rollout', 'deployment', 'transformation', 'modernization']
+
+            # Look for project mentions in summary
+            if summary:
+                summary_lower = summary.lower()
+                for keyword in project_keywords:
+                    if keyword in summary_lower:
+                        # Found a project mention - use company + keyword
+                        project_name = f"{company} - {keyword.capitalize()}"
+                        break
+
+            # Extract description (use first 200 chars of summary)
+            description = summary[:200] if summary else f"{job_title} role at {company}"
+
+            # Create project entry
+            project = {
+                'Name': project_name,
+                'Description': description,
+                'Company': company,
+                'Role': job_title,
+                'StartDate': start_date,
+                'EndDate': end_date
+            }
+
+            projects.append(project)
+
+        # Limit to most recent 3 projects to avoid bloat
+        return projects[:3]
+
+    def _infer_achievements_from_experience(self, experiences: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Extract achievement statements from work experience descriptions"""
+        achievements = []
+
+        # Achievement indicators (quantified results, awards, recognitions)
+        achievement_patterns = [
+            r'(?:achieved|delivered|increased|reduced|improved|led|managed|saved)\s+.*?(?:\d+%|\$[\d,]+|[\d,]+\s+(?:users|clients|projects))',
+            r'(?:award|recognition|promoted|selected|chosen)',
+            r'(?:successfully|significantly)\s+\w+',
+        ]
+
+        for exp in experiences:
+            company = exp.get('CompanyName', '')
+            summary = exp.get('Summary', '')
+            start_date = exp.get('StartDate', '')
+
+            if not summary:
+                continue
+
+            # Split summary into sentences/bullet points
+            lines = [line.strip() for line in summary.split('.') if line.strip()]
+
+            for line in lines:
+                # Check if line contains achievement indicators
+                is_achievement = False
+
+                for pattern in achievement_patterns:
+                    if re.search(pattern, line, re.IGNORECASE):
+                        is_achievement = True
+                        break
+
+                # Also check for quantifiable results
+                if re.search(r'\d+%', line) or re.search(r'\$[\d,]+', line):
+                    is_achievement = True
+
+                if is_achievement and len(line) > 30:
+                    # Extract year from start_date
+                    year = ''
+                    if start_date:
+                        year_match = re.search(r'\d{4}', start_date)
+                        if year_match:
+                            year = year_match.group()
+
+                    achievement = {
+                        'Description': line[:150],  # Limit length
+                        'Company': company,
+                        'Date': year
+                    }
+                    achievements.append(achievement)
+
+                    # Limit achievements per company
+                    if len([a for a in achievements if a['Company'] == company]) >= 2:
+                        break
+
+        # Limit to top 5 achievements
+        return achievements[:5]

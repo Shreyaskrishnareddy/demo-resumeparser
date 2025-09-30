@@ -70,4 +70,4 @@ server*.log
 *.tmp
 *.temp
 temp/
-tmp/
+tmp/_archive/
