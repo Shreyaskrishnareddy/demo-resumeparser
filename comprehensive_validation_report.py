@@ -229,7 +229,7 @@ def main():
 
     # Resume 1: Ahmad Qasem
     print("\n" + "="*100)
-    print("📄 RESUME 1: AHMAD QASEM (PDF)")
+    print("RESUME 1: AHMAD QASEM (PDF)")
     print("="*100)
     pdf = fitz.open('Resume&Results/Ahmad Qasem-Resume.pdf')
     text = ''.join([page.get_text() for page in pdf])
@@ -238,24 +238,24 @@ def main():
     all_results['Resume 1 - Ahmad Qasem'] = result1
     all_parsed_json['Resume 1 - Ahmad Qasem'] = parsed1
 
-    print(f"\n📊 Statistics:")
+    print(f"\nStatistics:")
     print(f"  Total fields checked: {result1['total_fields_checked']}")
     print(f"  Fields present: {result1['fields_present']} ({result1['fields_present']/result1['total_fields_checked']*100:.1f}%)")
     print(f"  Fields missing: {result1['fields_missing']} ({result1['fields_missing']/result1['total_fields_checked']*100:.1f}%)")
-    print(f"\n  ✅ Issues fixed: {len(result1['issues_fixed'])}")
+    print(f"\n  Issues fixed: {len(result1['issues_fixed'])}")
     for fix in result1['issues_fixed'][:5]:
         print(f"     - {fix['category']}: {fix['field']}")
-    print(f"\n  ❌ Issues remaining: {len(result1['issues_remaining'])}")
+    print(f"\n  Issues remaining: {len(result1['issues_remaining'])}")
     for issue in result1['issues_remaining'][:5]:
         print(f"     - {issue['category']}: {issue['field']}")
 
-    print(f"\n📦 Parsed Data:")
+    print(f"\nParsed Data:")
     for key, value in result1['parsed_data'].items():
         print(f"  {key}: {value}")
 
     # Resume 2: Zamen Aladwani
     print("\n" + "="*100)
-    print("📄 RESUME 2: ZAMEN ALADWANI (PDF)")
+    print("RESUME 2: ZAMEN ALADWANI (PDF)")
     print("="*100)
     pdf = fitz.open('Resume&Results/ZAMEN_ALADWANI_PROJECT MANAGER_09_01_2023.pdf')
     text = ''.join([page.get_text() for page in pdf])
@@ -264,20 +264,20 @@ def main():
     all_results['Resume 2 - Zamen Aladwani'] = result2
     all_parsed_json['Resume 2 - Zamen Aladwani'] = parsed2
 
-    print(f"\n📊 Statistics:")
+    print(f"\nStatistics:")
     print(f"  Total fields checked: {result2['total_fields_checked']}")
     print(f"  Fields present: {result2['fields_present']} ({result2['fields_present']/result2['total_fields_checked']*100:.1f}%)")
     print(f"  Fields missing: {result2['fields_missing']} ({result2['fields_missing']/result2['total_fields_checked']*100:.1f}%)")
-    print(f"\n  ✅ Issues fixed: {len(result2['issues_fixed'])}")
-    print(f"\n  ❌ Issues remaining: {len(result2['issues_remaining'])}")
+    print(f"\n  Issues fixed: {len(result2['issues_fixed'])}")
+    print(f"\n  Issues remaining: {len(result2['issues_remaining'])}")
 
-    print(f"\n📦 Parsed Data:")
+    print(f"\nParsed Data:")
     for key, value in result2['parsed_data'].items():
         print(f"  {key}: {value}")
 
     # Resume 3: Krupakar Reddy
     print("\n" + "="*100)
-    print("📄 RESUME 3: KRUPAKAR REDDY (DOCX)")
+    print("RESUME 3: KRUPAKAR REDDY (DOCX)")
     print("="*100)
     doc = Document('Resume&Results/KrupakarReddy_SystemP.docx')
     text = '\n'.join([p.text for p in doc.paragraphs])
@@ -286,20 +286,20 @@ def main():
     all_results['Resume 3 - Krupakar Reddy'] = result3
     all_parsed_json['Resume 3 - Krupakar Reddy'] = parsed3
 
-    print(f"\n📊 Statistics:")
+    print(f"\nStatistics:")
     print(f"  Total fields checked: {result3['total_fields_checked']}")
     print(f"  Fields present: {result3['fields_present']} ({result3['fields_present']/result3['total_fields_checked']*100:.1f}%)")
     print(f"  Fields missing: {result3['fields_missing']} ({result3['fields_missing']/result3['total_fields_checked']*100:.1f}%)")
-    print(f"\n  ✅ Issues fixed: {len(result3['issues_fixed'])}")
-    print(f"\n  ❌ Issues remaining: {len(result3['issues_remaining'])}")
+    print(f"\n  Issues fixed: {len(result3['issues_fixed'])}")
+    print(f"\n  Issues remaining: {len(result3['issues_remaining'])}")
 
-    print(f"\n📦 Parsed Data:")
+    print(f"\nParsed Data:")
     for key, value in result3['parsed_data'].items():
         print(f"  {key}: {value}")
 
     # Resume 4: Venkat Rohit (not in verification Excel but we'll validate anyway)
     print("\n" + "="*100)
-    print("📄 RESUME 4: VENKAT ROHIT (DOCX)")
+    print("RESUME 4: VENKAT ROHIT (DOCX)")
     print("="*100)
     doc = Document('Resume&Results/Venkat_Rohit_Senior .NET Full Stack Developer (1).docx')
     text = '\n'.join([p.text for p in doc.paragraphs])
@@ -309,27 +309,27 @@ def main():
     all_results['Resume 4 - Venkat Rohit'] = result4
     all_parsed_json['Resume 4 - Venkat Rohit'] = parsed4
 
-    print(f"\n📊 Statistics:")
+    print(f"\nStatistics:")
     print(f"  Total fields checked: {result4['total_fields_checked']}")
     print(f"  Fields present: {result4['fields_present']} ({result4['fields_present']/result4['total_fields_checked']*100:.1f}%)")
     print(f"  Fields missing: {result4['fields_missing']} ({result4['fields_missing']/result4['total_fields_checked']*100:.1f}%)")
 
-    print(f"\n📦 Parsed Data:")
+    print(f"\nParsed Data:")
     for key, value in result4['parsed_data'].items():
         print(f"  {key}: {value}")
 
     # Overall Summary
     print("\n" + "="*100)
-    print("📈 OVERALL SUMMARY")
+    print("OVERALL SUMMARY")
     print("="*100)
     total_fixed = sum(len(r['issues_fixed']) for r in all_results.values())
     total_remaining = sum(len(r['issues_remaining']) for r in all_results.values())
     total_fields_present = sum(r['fields_present'] for r in all_results.values())
     total_fields_checked = sum(r['total_fields_checked'] for r in all_results.values())
 
-    print(f"\n✅ Total issues FIXED across all resumes: {total_fixed}")
-    print(f"❌ Total issues REMAINING: {total_remaining}")
-    print(f"📊 Overall field coverage: {total_fields_present}/{total_fields_checked} ({total_fields_present/total_fields_checked*100:.1f}%)")
+    print(f"\nTotal issues FIXED across all resumes: {total_fixed}")
+    print(f"Total issues REMAINING: {total_remaining}")
+    print(f"Overall field coverage: {total_fields_present}/{total_fields_checked} ({total_fields_present/total_fields_checked*100:.1f}%)")
 
     # Save results
     with open('validation_results.json', 'w', encoding='utf-8') as f:
@@ -338,7 +338,7 @@ def main():
     with open('all_resumes_parsed.json', 'w', encoding='utf-8') as f:
         json.dump(all_parsed_json, f, indent=2, ensure_ascii=False, default=str)
 
-    print(f"\n📁 Results saved to:")
+    print(f"\nResults saved to:")
     print(f"  - validation_results.json")
     print(f"  - all_resumes_parsed.json")
     print("\n" + "="*100)

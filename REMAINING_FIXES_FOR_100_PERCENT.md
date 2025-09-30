@@ -1,4 +1,4 @@
-# 🎯 REMAINING FIXES TO ACHIEVE 100% EXTRACTION
+# TARGET: REMAINING FIXES TO ACHIEVE 100% EXTRACTION
 
 **Current Status:** 78.5% (135/172 fields)
 **Target:** 100% (172/172 fields)
@@ -6,7 +6,7 @@
 
 ---
 
-## 📊 VERIFIED JSON OUTPUT ANALYSIS
+## [STATS] VERIFIED JSON OUTPUT ANALYSIS
 
 Verified against actual `all_resumes_parsed.json` file.
 
@@ -20,7 +20,7 @@ Verified against actual `all_resumes_parsed.json` file.
 
 ---
 
-## 🔧 FIXES NEEDED
+## [FIX] FIXES NEEDED
 
 ### 1. **Projects Inference** (High Priority)
 **Issue:** Smart inference code exists but isn't being used correctly
@@ -114,7 +114,7 @@ Project Management Professional (PMP) - PMI, 2020
   "Degree": "Bachelor's Degree of Computer Engineering",
   "Institution": "Applied Science University",
   "FieldOfStudy": "Computer Engineering",
-  "Location": "",  // ❌ Empty
+  "Location": "",  // [MISSING] Empty
   "EndDate": "2014"  // Sometimes empty
 }
 ```
@@ -157,7 +157,7 @@ achievement_patterns = [
 - Ahmad Qasem: No middle name in resume
 - Zamen Aladwani: No middle name in resume
 - Venkat Rohit: No middle name in resume
-- Krupakar Reddy: ✅ Has "REDDY" - already extracted
+- Krupakar Reddy: [DONE] Has "REDDY" - already extracted
 
 **Decision:** Accept as empty (correct behavior)
 
@@ -172,7 +172,7 @@ achievement_patterns = [
 - Ahmad: No social media in resume
 - Zamen: No social media in resume
 - Krupakar: No social media in resume
-- Venkat: ✅ Has LinkedIn - already extracted
+- Venkat: [DONE] Has LinkedIn - already extracted
 
 **Decision:** Accept as empty (correct behavior)
 
@@ -191,17 +191,17 @@ achievement_patterns = [
 
 ---
 
-## 📈 ACHIEVABLE 100% DEFINITION
+## [SUMMARY] ACHIEVABLE 100% DEFINITION
 
 ### Realistic 100%:
 **Extract all fields that ARE present in resume = 100% accuracy**
 
 ### Current achievable fixes:
-1. ✅ Projects inference → +16 fields (4 per resume × 4)
-2. ✅ Employment Type → +4 fields (1 per resume × 4)
-3. ✅ Certifications Issuer/Year → +8 fields
-4. ✅ Education improvements → +6 fields
-5. ✅ Achievements for Zamen → +1 field
+1. [DONE] Projects inference → +16 fields (4 per resume × 4)
+2. [DONE] Employment Type → +4 fields (1 per resume × 4)
+3. [DONE] Certifications Issuer/Year → +8 fields
+4. [DONE] Education improvements → +6 fields
+5. [DONE] Achievements for Zamen → +1 field
 
 **Total fixable:** ~35 fields
 **New coverage:** 135 + 35 = 170/172 = **98.8%**
@@ -211,7 +211,7 @@ achievement_patterns = [
 
 ---
 
-## 🎯 IMPLEMENTATION PRIORITY
+## TARGET: IMPLEMENTATION PRIORITY
 
 ### High Priority (Gets to 90%+):
 1. **Fix Projects inference logic** - Override bad extraction
@@ -226,7 +226,7 @@ achievement_patterns = [
 
 ---
 
-## ✅ ACCEPTANCE CRITERIA FOR 100%
+## [DONE] ACCEPTANCE CRITERIA FOR 100%
 
 **Definition:** Extract 100% of fields that exist in source resumes
 
@@ -295,7 +295,7 @@ def _infer_employment_type(self, job_title: str, description: str) -> str:
 
 ---
 
-## 🚀 NEXT STEPS
+## [DEPLOY] NEXT STEPS
 
 1. Implement high-priority fixes
 2. Test on all 4 resumes
