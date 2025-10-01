@@ -74,10 +74,16 @@ HTML_TEMPLATE = """
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7; min-height: 100vh; color: #1d1d1f;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1d1d1f;
+            margin: 0;
+            padding: 0;
         }
         .container {
-            max-width: 520px; margin: 80px auto; padding: 0 24px;
+            background: white;
+            padding: 40px 60px;
+            min-height: 100vh;
         }
         h1 {
             font-size: 2.5rem; font-weight: 700; text-align: center;
