@@ -3420,9 +3420,12 @@ class FixedComprehensiveParser:
             'MiddleName': candidate_name.get('MiddleName', ''),
             'LastName': candidate_name.get('FamilyName', 'N/A'),
             'EmailID': email,
+            'EmailAddress': email,  # BRD-compliant field name
+            'Email': email,  # Alternative field name
             'PhoneNumber': phone,
             'CountryCode': country_code,
-            'Location': location
+            'Location': location,
+            'SocialMediaLinks': []  # BRD-required field
         }
 
     def _convert_experience_to_list_format(self, experience: List[Dict[str, Any]], raw_text: str = '') -> List[Dict[str, Any]]:
@@ -3568,6 +3571,7 @@ class FixedComprehensiveParser:
 
             converted.append({
                 'CompanyName': employer_fixed,
+                'Employer': employer_fixed,  # BRD-compliant field name
                 'Location': location,
                 'JobTitle': job_title,
                 'StartDate': start_date.split('-')[1] + ' ' + start_date.split('-')[0] if start_date != 'N/A' and '-' in start_date else start_date,
