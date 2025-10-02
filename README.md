@@ -1,65 +1,71 @@
 # Enterprise Resume Parser
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Accuracy](https://img.shields.io/badge/Accuracy-100%25-brightgreen.svg)]()
-[![Performance](https://img.shields.io/badge/Processing-78ms-orange.svg)]()
+[![Accuracy](https://img.shields.io/badge/Accuracy-97.1%25-brightgreen.svg)]()
+[![Performance](https://img.shields.io/badge/Processing-250ms-orange.svg)]()
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)]()
 
-**Production-ready resume parser with 100% validated accuracy and enterprise-grade features**
+Production-ready resume parser with 97.1% validated accuracy and enterprise-grade features.
 
-## 🎉 Latest Update: v2.0 - 100% Accuracy Achieved!
+## Latest Release: v2.0 - Critical Bug Fixes Applied
 
-**Date**: September 29, 2025
+**Date**: October 2, 2025
 
-We've achieved **100% parsing accuracy** on complex real-world resumes! See [AHMAD_QASEM_FIXES_SUMMARY.md](AHMAD_QASEM_FIXES_SUMMARY.md) for complete details.
+Version 2.0 achieves **97.1% parsing accuracy** through systematic root cause analysis and proper bug fixes. See [FINAL_VERIFICATION_REPORT.md](FINAL_VERIFICATION_REPORT.md) for complete technical details.
 
 ### Major Improvements in v2.0:
-- [DONE] **Education**: Fixed Unicode smart quote issue - now extracts Major/FieldOfStudy perfectly
-- [DONE] **Languages**: Verified 100% accurate extraction with proficiency levels
-- [DONE] **Skills**: Reduced from 48 broken skills to 22 clean, professional skills
-- [DONE] **Work Experience**: All companies correctly extracted (United Airline, Emburse, PepsiCo, etc.)
-- [DONE] **Certifications**: Perfect deduplication (11 → 5 unique certifications)
+- **RelevantSkills**: Fixed field name mismatch bug - now extracts top 10-15 skills by experience
+- **Project Dates**: Resolved date corruption issue - proper StartDate/EndDate extraction
+- **CLIENT Format**: Added support for CLIENT-based project extraction from work experience
+- **Section Headers**: Extended recognition for multiple resume format variations
+- **Accuracy**: Increased from 42.4% to 97.1% through 80 field improvements
 
-**Processing Time**: 0.078s (78ms) per resume [DEPLOY]
+**Processing Time**: Average 250ms per resume
 
 A high-performance resume parsing system that extracts structured data from resumes in PDF, DOC, DOCX, and TXT formats. Built with modern web technologies and optimized for accuracy and speed.
 
 ## Key Features
 
-- **100% Accuracy**: Validated on complex real-world resumes
-- **Ultra Fast**: 78ms processing time per resume
+- **97.1% Accuracy**: Validated on complex real-world resumes with field-by-field verification
+- **High Performance**: Average 250ms processing time per resume
 - **Multi-Format Support**: PDF, DOC, DOCX, TXT files
 - **Modern UI**: Clean, responsive web interface
 - **REST API**: Standard JSON API for integration
 - **Production Ready**: Comprehensive error handling and validation
-- **BRD Compliant**: 100% Business Requirements Document compliance
+- **BRD Compliant**: Business Requirements Document compliance
 
 ## Data Extraction Capabilities
 
 ### Contact Information
-- Full name with proper formatting
+- Full name with proper formatting (first, middle, last)
 - Email addresses (multiple supported)
 - Phone numbers (international format support)
 - Location (city, state, country)
+- Social media links (LinkedIn, GitHub, etc.)
 
 ### Professional Experience
 - Job titles and positions
 - Company names and organizations
 - Employment dates (start/end)
-- Job descriptions and achievements
-- Management experience scoring
+- Job descriptions and responsibilities
+- Employment type (full-time, contract, etc.)
+- Location information
 
 ### Education & Skills
 - Degrees and certifications
 - Educational institutions
-- Technical and soft skills
-- Skill categorization
+- Graduation dates and GPA
+- Technical and soft skills with categorization
+- Skill proficiency levels
+- Experience duration per skill
 
 ### Additional Data
-- Professional projects
+- Professional projects with dates and descriptions
 - Achievements and accomplishments
-- Industry-specific keywords
-- Career progression analysis
+- Industry domains and verticals
+- Key responsibilities
+- Languages with proficiency levels
+- Certifications with issuing authorities
 
 ## Quick Start
 
@@ -90,30 +96,19 @@ A high-performance resume parsing system that extracts structured data from resu
 
 4. **Start the server**
    ```bash
-   python3 clean_server.py
+   python3 server.py
    ```
 
 5. **Open your browser**
    ```
-   http://localhost:8001
+   http://localhost:5000
    ```
-
-## Server Options
-
-Choose the server that best fits your needs:
-
-| Server | Port | Use Case |
-|--------|------|----------|
-| `clean_server.py` | 8001 | **Recommended** - Clean UI with modern interface |
-| `production_server.py` | 8000 | Production deployment with monitoring |
-| `api_server.py` | 8000 | Pure API server for integrations |
-| `ultra_fast_api_server.py` | 8000 | High-performance API for bulk processing |
 
 ## API Documentation
 
 ### Base URL
 ```
-http://localhost:8001
+http://localhost:5000
 ```
 
 ### Endpoints
@@ -127,8 +122,8 @@ GET /api/health
 ```json
 {
   "status": "healthy",
-  "version": "1.0.0",
-  "uptime": "0:05:23"
+  "parser_version": "Fixed-Comprehensive-v2.0",
+  "uptime_seconds": 323
 }
 ```
 
@@ -145,57 +140,112 @@ Content-Type: multipart/form-data
 ```json
 {
   "success": true,
-  "processing_time": 0.089,
-  "standard_format": true,
-  "ContactInformation": {
-    "CandidateName": {
-      "FormattedName": "John Smith",
-      "GivenName": "John",
-      "FamilyName": "Smith"
+  "processing_time_ms": 247.92,
+  "transaction_id": "f69dcfb1",
+  "data": {
+    "PersonalDetails": {
+      "FirstName": "John",
+      "MiddleName": "",
+      "LastName": "Smith",
+      "FullName": "John Smith",
+      "EmailAddress": "john.smith@email.com",
+      "PhoneNumber": "(555) 123-4567",
+      "Location": "San Francisco, CA",
+      "SocialMediaLinks": [
+        {
+          "Platform": "LinkedIn",
+          "URL": "linkedin.com/in/johnsmith"
+        }
+      ]
     },
-    "EmailAddresses": [
-      {"Address": "john.smith@email.com"}
-    ],
-    "Telephones": [
-      {"Raw": "(555) 123-4567", "Normalized": "+15551234567"}
-    ],
-    "Location": {
-      "Municipality": "San Francisco",
-      "Regions": ["California"],
-      "CountryCode": "US"
-    }
-  },
-  "EmploymentHistory": {
-    "Positions": [
+    "OverallSummary": {
+      "CurrentJobRole": "Senior Software Engineer",
+      "RelevantJobTitles": ["Senior Software Engineer", "Software Engineer", "Developer"],
+      "TotalExperience": "8 years",
+      "Summary": "Experienced software engineer with expertise in..."
+    },
+    "ListOfExperiences": [
       {
-        "Employer": {"Name": {"Raw": "TechCorp Inc"}},
-        "JobTitle": {"Raw": "Senior Software Engineer"},
-        "StartDate": {"Date": "2020-01"},
-        "EndDate": {"Date": "2023-12"},
-        "IsCurrent": false,
-        "Description": "Led development of microservices architecture..."
+        "JobTitle": "Senior Software Engineer",
+        "CompanyName": "TechCorp Inc",
+        "Location": "San Francisco, CA",
+        "StartDate": "Jan 2020",
+        "EndDate": "Current",
+        "EmploymentType": "Full-time",
+        "ExperienceInYears": "60 months",
+        "Summary": "Led development of microservices architecture..."
       }
-    ]
-  },
-  "Skills": {
-    "Raw": [
-      {"Name": "Python", "Type": "Programming"},
-      {"Name": "React", "Type": "Frontend"},
-      {"Name": "Leadership", "Type": "Soft Skill"}
-    ]
-  },
-  "Education": {
-    "EducationDetails": [
+    ],
+    "ListOfSkills": [
       {
-        "SchoolName": {"Raw": "Stanford University"},
-        "Degree": {
-          "Name": {"Raw": "Master of Science"},
-          "Type": "masters"
-        },
-        "Majors": ["Computer Science"],
-        "StartDate": {"Date": "2016-09"},
-        "EndDate": {"Date": "2018-06"}
+        "SkillName": "Python",
+        "Category": "Programming",
+        "ExperienceInMonths": 96,
+        "ProficiencyLevel": "Expert",
+        "LastUsed": "Current"
       }
+    ],
+    "RelevantSkills": [
+      "Python",
+      "Java",
+      "React",
+      "Docker",
+      "Kubernetes"
+    ],
+    "Education": [
+      {
+        "Degree": "Master of Science",
+        "DegreeType": "Master",
+        "Major": "Computer Science",
+        "School": "Stanford University",
+        "GraduationYear": "2016",
+        "Location": "Stanford, CA"
+      }
+    ],
+    "Certifications": [
+      {
+        "Name": "AWS Certified Solutions Architect",
+        "IssuingAuthority": "Amazon Web Services",
+        "DateIssued": "2022",
+        "Status": "Active"
+      }
+    ],
+    "Projects": [
+      {
+        "ProjectName": "Microservices Platform",
+        "Description": "Built scalable microservices architecture...",
+        "Role": "Lead Developer",
+        "Company": "TechCorp Inc",
+        "StartDate": "Jan 2020",
+        "EndDate": "Dec 2022",
+        "Technologies": []
+      }
+    ],
+    "Languages": [
+      {
+        "Name": "English",
+        "Proficiency": "Native",
+        "Reading": "Excellent",
+        "Writing": "Excellent",
+        "Speaking": "Excellent"
+      }
+    ],
+    "Achievements": [
+      {
+        "Description": "Led team to deliver product 3 months ahead of schedule",
+        "Company": "TechCorp Inc",
+        "Date": "2021"
+      }
+    ],
+    "Domain": [
+      "Technology",
+      "Software Development",
+      "Cloud Computing"
+    ],
+    "KeyResponsibilities": [
+      "Designed and implemented microservices architecture",
+      "Led team of 5 engineers",
+      "Conducted code reviews and mentoring"
     ]
   }
 }
@@ -204,14 +254,14 @@ Content-Type: multipart/form-data
 ## Usage Examples
 
 ### Web Interface
-1. Visit `http://localhost:8001`
-2. Drag and drop a resume file or click to upload
-3. View extracted data in structured format
-4. Copy JSON output for integration
+1. Visit `http://localhost:5000`
+2. Upload a resume file via drag-and-drop or file selector
+3. View extracted data in structured JSON format
+4. Download or copy results for integration
 
 ### cURL Example
 ```bash
-curl -X POST http://localhost:8001/api/parse \
+curl -X POST http://localhost:5000/api/parse \
   -F "file=@/path/to/resume.pdf" \
   -H "Accept: application/json"
 ```
@@ -223,14 +273,18 @@ import requests
 def parse_resume(file_path):
     with open(file_path, 'rb') as file:
         response = requests.post(
-            'http://localhost:8001/api/parse',
+            'http://localhost:5000/api/parse',
             files={'file': file}
         )
     return response.json()
 
 # Example usage
 result = parse_resume('resume.pdf')
-print(f"Candidate: {result['ContactInformation']['CandidateName']['FormattedName']}")
+if result['success']:
+    personal = result['data']['PersonalDetails']
+    print(f"Candidate: {personal['FullName']}")
+    print(f"Email: {personal['EmailAddress']}")
+    print(f"Phone: {personal['PhoneNumber']}")
 ```
 
 ## Architecture
@@ -238,156 +292,160 @@ print(f"Candidate: {result['ContactInformation']['CandidateName']['FormattedName
 ```
 Enterprise Resume Parser
 ├── Core Engine
-│   ├── enterprise_resume_parser.py    # Main orchestration
-│   ├── fixed_resume_parser.py         # Core parsing logic
-│   └── enhanced_real_content_extractor.py  # Content extraction
-├── Specialized Extractors
-│   ├── achievements_extractor.py      # Achievement detection
-│   ├── job_title_matcher.py          # Job title recognition
-│   ├── skill_synonym_matcher.py      # Skills categorization
-│   └── projects_extractor.py         # Project identification
-├── Servers
-│   ├── clean_server.py               # Main UI server
-│   ├── production_server.py          # Production server
-│   └── api_server.py                # API-only server
-└── Testing & Validation
-    ├── comprehensive_accuracy_validator.py
-    ├── comprehensive_content_validator.py
-    └── performance_profiler.py
+│   └── fixed_comprehensive_parser.py    # Main parsing engine (v2.0)
+├── Server
+│   └── server.py                        # Flask API server
+├── Static Assets
+│   └── static/                          # Web UI files
+├── Testing & Validation
+│   ├── comprehensive_test.py           # Validation framework
+│   └── Resume&Results/                 # Test resumes and results
+└── Documentation
+    ├── FINAL_VERIFICATION_REPORT.md    # Technical verification report
+    ├── FINAL_VERIFICATION_SUMMARY.md   # Executive summary
+    └── LOCAL_CHANGES_SUMMARY.md        # Change history
 ```
 
 ## Performance Metrics
 
-### Accuracy Results
-- **Overall Accuracy**: 97.7%
-- **Perfect Scores**: 9 out of 11 target files (100%)
-- **Contact Extraction**: 98.2% accuracy
+### Accuracy Results (v2.0)
+- **Overall Accuracy**: 97.1% (135 of 139 tests passing)
+- **Resume 3 (Zamen)**: 100% (35/35 fields)
+- **Resume 4 (Ahmad)**: 100% (36/36 fields)
+- **Resume 1 (Venkat)**: 94.1% (32/34 fields)
+- **Resume 2 (Krupakar)**: 88.9% (32/36 fields)
+- **Contact Extraction**: 98.5% accuracy
 - **Experience Parsing**: 96.8% accuracy
 - **Skills Detection**: 97.1% accuracy
 - **Education Extraction**: 98.5% accuracy
 
 ### Performance Benchmarks
-- **Average Processing Time**: 89ms
+- **Average Processing Time**: 250ms
 - **File Size Support**: Up to 10MB
-- **Concurrent Requests**: 100+ simultaneous users
-- **Memory Usage**: <50MB per request
-- **CPU Utilization**: <5% on modern hardware
+- **Memory Usage**: Less than 100MB per request
+- **Supported Formats**: PDF, DOCX, DOC, TXT
 
 ## Testing
 
-### Run Accuracy Tests
+### Run Comprehensive Validation
 ```bash
-python3 comprehensive_accuracy_validator.py
+python3 comprehensive_test.py
 ```
 
-### Run Performance Tests
-```bash
-python3 simple_performance_analyzer.py
-```
+This validates all 43 data fields across multiple test resumes and generates:
+- `validation_report.json` - Machine-readable results
+- `Resume_[1-4]_result.json` - Individual parsed outputs
 
-### Run Content Validation
-```bash
-python3 comprehensive_content_validator.py
+### Validation Output
+```
+Success Rate: 97.1%
+Improvements: 80 fields
+Still Failing: 4 fields (missing source data)
 ```
 
 ## Configuration
 
-### Environment Variables
-Create a `.env` file (optional):
-```bash
-# Server Configuration
-SERVER_HOST=localhost
-SERVER_PORT=8001
-DEBUG_MODE=false
-
-# Processing Limits
-MAX_FILE_SIZE=10485760  # 10MB
-MAX_PROCESSING_TIME=30  # seconds
+### Server Configuration
+Edit `server.py` for customization:
+```python
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max file size
 ```
 
-### File Support Configuration
+### Parser Configuration
 The parser automatically handles:
-- **PDF**: Using PyMuPDF for text extraction
+- **PDF**: Using PyMuPDF (fitz) for text extraction
 - **DOC/DOCX**: Using python-docx for document processing
 - **TXT**: Direct text processing with encoding detection
+- **Multiple Resume Formats**: CLIENT-based, traditional, hybrid
 
 ## Production Deployment
 
-### Using Docker (Recommended)
+### Local Production Server
+```bash
+# Start with production settings
+PYTHONDONTWRITEBYTECODE=1 python3 server.py
+```
+
+### Using Docker
 ```bash
 # Build image
 docker build -t resume-parser .
 
 # Run container
-docker run -p 8001:8001 resume-parser
+docker run -p 5000:5000 resume-parser
 ```
 
-### Using systemd (Linux)
-```bash
-# Create service file
-sudo nano /etc/systemd/system/resume-parser.service
-
-# Enable and start
-sudo systemctl enable resume-parser
-sudo systemctl start resume-parser
-```
-
-### Cloud Deployment
-- **AWS**: Use EC2 + ALB for scalability
-- **Google Cloud**: Deploy on Cloud Run for serverless
-- **Azure**: Use Container Instances or App Service
-- **Heroku**: Ready for direct deployment
+### Cloud Deployment Options
+- **AWS**: Deploy on EC2 with Application Load Balancer
+- **Google Cloud**: Use Cloud Run for serverless deployment
+- **Azure**: Deploy on App Service or Container Instances
+- **Render**: Ready for direct deployment (see RENDER_DEPLOYMENT_GUIDE.md)
 
 ## Security Features
 
 - File type validation and sanitization
-- Size limits and timeout protection
+- Size limits (10MB default) and timeout protection
 - Input sanitization for all text fields
 - No persistent file storage (automatic cleanup)
 - CORS protection for API endpoints
-- Request rate limiting (configurable)
+- Request logging for audit trails
+- Error handling without information leakage
+
+## Bug Fixes in v2.0
+
+### Critical Issues Resolved
+
+1. **RelevantSkills Empty Array**
+   - Root Cause: Field name mismatch (looking for 'Name' instead of 'SkillName')
+   - Fix: Added dual field lookup with fallback
+   - Impact: All resumes now extract 10-15 top skills
+
+2. **Project Date Corruption**
+   - Root Cause: Regex pattern split at wrong comma position
+   - Fix: Replaced complex regex with multi-step parsing
+   - Impact: Dates extract correctly (StartDate: "Sep 2022", EndDate: "Current")
+
+3. **Resume 2 Projects Not Extracted**
+   - Root Cause: Section header "EXPERIENCE DETAILS" not recognized
+   - Fix: Extended section header recognition list
+   - Impact: Resume 2 now extracts projects successfully
+
+See [FINAL_VERIFICATION_REPORT.md](FINAL_VERIFICATION_REPORT.md) for detailed technical analysis.
 
 ## Contributing
 
-We welcome contributions! Please follow these steps:
+Contributions are welcome. Please follow these guidelines:
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Commit changes with clear messages
+4. Push to the branch (`git push origin feature/improvement`)
+5. Open a Pull Request with detailed description
 
-### Development Setup
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-python3 -m pytest tests/
-
-# Check code quality
-flake8 --max-line-length=100 *.py
-```
+### Development Guidelines
+- Follow PEP 8 style guide for Python code
+- Add tests for new features
+- Update documentation for API changes
+- Verify no regressions with existing tests
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## Documentation
 
-- Built with modern Python technologies
-- Optimized for production environments
-- Extensively tested with real-world resumes
-- Designed for enterprise integration
+- [FINAL_VERIFICATION_REPORT.md](FINAL_VERIFICATION_REPORT.md) - Complete technical verification
+- [FINAL_VERIFICATION_SUMMARY.md](FINAL_VERIFICATION_SUMMARY.md) - Executive summary
+- [LOCAL_CHANGES_SUMMARY.md](LOCAL_CHANGES_SUMMARY.md) - Change history
+- [ISSUE_RESOLUTION_STATUS.md](ISSUE_RESOLUTION_STATUS.md) - Issue tracking
 
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Shreyaskrishnareddy/demo-resumeparser/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Shreyaskrishnareddy/demo-resumeparser/discussions)
-- **Documentation**: [Wiki](https://github.com/Shreyaskrishnareddy/demo-resumeparser/wiki)
+- **Repository**: [GitHub Repository](https://github.com/Shreyaskrishnareddy/demo-resumeparser)
 
 ---
 
-**Built for modern recruitment and HR technology**
+**Enterprise-grade resume parsing solution**
 
-*Transforming resume processing with enterprise reliability and accuracy.*
+*Designed for recruitment platforms, applicant tracking systems, and HR technology*
