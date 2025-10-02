@@ -1,0 +1,196 @@
+Venkat Rohit
+Senior .NET Developer
+E-mail: venkatarohith214@gmail.com
+Contact: 7312131186
+LinkedIn: http://www.linkedin.com/in/rohit-venkat-03542719b
+
+Professional Summary
+
+.NET Developer with 15+ years of experience building secure, scalable web solutions using .NET Core, C# and microservices and skilled in cloud development, API integration and performance tuning, delivering reliable, user-focused applications.
+
+Front-End Technologies: Highly skilled in Angular 18+, TypeScript, AngularJS, React, HTML, CSS, JavaScript, Bootstrap, jQuery and Ajax, developing dynamic and responsive web applications that deliver seamless user experiences.
+User Interface Design & Optimization: Adept at crafting intuitive, visually appealing and accessible UIs, optimizing performance through techniques like lazy loading, code splitting and browser caching to enhance loading times and user engagement.
+State Management Expertise: Proficient in managing complex front-end application states with Redux and NgRx, ensuring predictable, maintainable and efficient architectures.
+Front-End Testing: Experienced with testing frameworks such as Jasmine, Jest, Mocha, Chai, Cucumber and Citrus, delivering reliable and bug-free user interfaces through rigorous validation processes.
+.NET Development Mastery: Extensive experience with .NET Core and .NET Framework, leveraging C# fundamentals, including OOP, LINQ and asynchronous programming, to design robust and scalable applications.
+Back-End Development Expertise: Proficient in Entity Framework Core, ASP.NET Core MVC and ASP.NET Web API for building secure efficient and maintainable back-end services.
+Multithreading & Performance Optimization: Expertise in developing multithreaded applications using advanced threading and synchronization techniques, achieving optimal resource utilization and application performance.
+Data Visualization Proficiency: Skilled in integrating PowerBI with data sources such as SQL Server, Excel, SharePoint and cloud platforms, creating insightful and actionable visual analytics.
+API Development & Testing: Proficient in designing, developing and testing APIs using Postman, SOAPUI and Swagger UI to ensure seamless integration, performance and security.
+Security Best Practices: Deep expertise in implementing robust authentication, authorization and encryption strategies using ASP.NET Core Identity, JWT and OAuth to safeguard applications and sensitive data.
+Microservices Architecture: Experienced in designing scalable, distributed systems using Microservices architecture, containerized with Docker and orchestrated with Kubernetes for high availability and fault tolerance.
+CI/CD Pipeline Expertise: Skilled in setting up and managing CI/CD pipelines using Azure DevOps, Jenkins and TeamCity, integrating ARM templates for automated, efficient and reliable deployments.
+Automation & Scripting Expertise: Proficient in PowerShell scripting to streamline deployment workflows, automate infrastructure provisioning and enhance operational efficiency.
+Dependency & Application Management: Expert in managing dependencies with NuGet and implementing robust logging with frameworks like Log4Net and Serilog to ensure effective monitoring and troubleshooting.
+Performance Monitoring: Experienced in leveraging tools like Application Insights and New Relic for real-time application performance monitoring, diagnostics and optimization.
+Cloud Computing Expertise: Proficient in Microsoft Azure and AWS, delivering scalable and cost-efficient solutions with serverless computing technologies like Azure Functions and AWS Lambda.
+Containerization & Orchestration: Advanced skills in Docker and Kubernetes, ensuring smooth deployment, scaling and management of containerized applications for modern development workflows.
+Project Management Tools: Proficient in JIRA, Rally, TFS and Confluence for planning, tracking and documentation. Experienced in optimizing workflows, prioritizing tasks and ensuring cross-team alignment to meet deadlines.
+Communication Platforms: Adept at using Slack and Microsoft Teams to facilitate seamless communication, drive collaboration and coordinate effectively across cross-functional and distributed teams.
+Secure Coding Practices: Experienced in implementing industry-standard security measures, including OAuth2, SSL and JWT, to ensure robust authentication, encrypted data transmission and compliance with best practices.
+Version Control Systems: Expertise in GitHub, GitLab and Bitbucket for efficient version control, effective collaboration and maintaining high-quality, well-managed codebases.
+
+Certifications
+
+AWS Certified Solutions Architect Associate.
+Microsoft Certified: Azure Solutions Architect Expert.
+
+Employment Timeline
+
+Client: Visa, San Francisco, CA                                                                                                	Sep 2022 - Till Date  
+Senior .Net Full Stack Developer
+
+Tasks & Roles:
+Leveraged Agile methodologies in the financial domain to accelerate delivery of secure, compliant payment solutions, ensuring alignment with evolving regulations, customer expectations and tight deadlines.
+Designed modular, high-performance financial systems using Microservices architecture to improve scalability and resilience in transaction processing, fraud detection and banking applications.
+Designed and optimized PL/SQL stored procedures, dynamic SQL, and exception handling for real-time transaction processing.
+Developed responsive UIs with JavaScript, jQuery, and TypeScript, enhancing interactivity in Angular 18 enterprise portals.
+Integrated XML/JSON APIs for secure communication across payment gateways and mobile banking platforms.
+Developed enterprise-grade financial applications using ASP.NET Core 3.1 Web API, enabling secure, scalable and compliant microservices for transaction management, customer onboarding and real-time account servicing.
+Developed robust RESTful Web Services for secure, standardized integration with financial institutions, payment networks mobile banking platforms across multi-channel ecosystems.
+Optimized Angular applications with lazy loading, code-splitting, and state management (NgRx) to handle large data grids.
+Delivered features within a structured enterprise SDLC, coordinating across dev, QA, and compliance teams.
+Developed enterprise-grade services using .NET Core with strong OOP principles, supporting modular financial microservices.
+Facilitated lightweight financial data exchange using JSON, enabling rapid communication across distributed payment gateways, mobile apps and financial analytics engines while maintaining performance and data integrity.
+Enhanced API lifecycle management and operational scalability by integrating Azure API Gateway, enabling secure and high-performance cloud-based solutions.
+Designed interactive UI components using Blazor Server with .NET 6, enabling real-time updates in internal transaction dashboards.
+Used AJAX with XML/JSON payloads to fetch financial data asynchronously from REST APIs, ensuring smooth user experiences.
+Secured user authentication and access control through the implementation of OAuth2 protocols, ensuring robust application security and protection of sensitive resources.
+Implemented Blazor’s two-way binding for role-based admin portals, ensuring secure and responsive financial system interfaces.
+Designed and developed responsive, user-friendly interfaces using Angular 18, HTML, CSS, JavaScript, Bootstrap and TypeScript, elevating user engagement and experience.
+Achieved optimized data storage and retrieval operations with in-depth expertise in SQL Server, ensuring high-performance and scalable database solutions.
+Built ETL pipelines to transport and aggregate large financial datasets between Oracle, SQL Server, and distributed systems, ensuring accuracy and compliance.
+Configured Kubernetes clusters on Azure AKS, managing scaling, rolling updates, and secrets for payment processing workloads.
+Performed data migration and transformation tasks using PL/SQL scripts for onboarding new clients and financial products, ensuring seamless integration with legacy systems.
+Delivered high-quality, dependable software with comprehensive testing using XUnit, ensuring robust application functionality and exceptional performance in .NET environments.
+Ensured Angular application stability and performance through rigorous testing frameworks like Karma and Jasmine, while maintaining reliable web services with Cucumber automation testing.
+Developed and optimized complex PL/SQL stored procedures, triggers, and functions to support secure and high-performance financial data transactions, including payment processing and customer account updates.
+Built automated API testing scripts for JSON/XML endpoints to validate data integrity across payment and fraud-detection systems.
+Designed and deployed highly efficient, cloud-first solutions leveraging Azure, aligning with project-specific requirements to deliver scalable, cost-effective and robust implementations.
+Facilitated seamless team collaboration and efficient source code management through Git, enabling version control and streamlined workflows for development teams.
+Utilized Visual Studio for end-to-end application development and SQL Server Management Studio for advanced database tuning, optimization and management.
+Improved debugging efficiency and system performance monitoring with detailed logging solutions using Log4Net, ensuring enhanced system traceability and reliability.
+Implemented OAuth2-based authentication and fine-grained role-based access control to safeguard APIs and user-sensitive payment information.
+Delivered features within a structured enterprise SDLC, coordinating across dev, QA, and compliance teams.
+Automated monitoring and alerting of Kubernetes pods using Prometheus/Grafana, ensuring 99.9% availability of mission-critical services.
+
+Client: UT Southwestern Medical Center, Dallas, TX                                                               	Jan 2020 - Aug 2022 
+Senior .Net Full Stack Developer
+
+Tasks & Roles:
+Leveraged Agile frameworks to manage healthcare software development, ensuring rapid adaptation to clinical needs, HIPAA compliance patient-care priorities while maintaining efficiency.
+Engineered ETL processes to migrate and consolidate large patient datasets across SQL Server, Oracle, and cloud systems for HIPAA-compliant reporting.
+Built scalable healthcare applications using ASP.NET Core 2.0 Web API and Microservices architecture, delivering solutions for EHR, patient scheduling medical data management. 
+Built clinician-facing dashboards with JavaScript, jQuery, and Angular 10, improving usability of medical record systems.
+Collaborated with Texas-based financial partners, aligning with state regulatory requirements in data handling.
+Designed PL/SQL functions, triggers, and stored procedures with robust exception handling for clinical data integrity.
+Utilized PL/SQL to write stored procedures, functions, and triggers for Oracle-based healthcare applications, optimizing performance and ensuring HIPAA-compliant data handling.
+Monitored Kafka cluster health and consumer lag using tools like Prometheus and Grafana, ensuring reliable message delivery and system observability in production environments.
+Utilized Entity Framework Core for advanced object-relational mapping, streamlining interactions with complex healthcare databases and ensuring efficient handling of sensitive patient data.
+Applied object-oriented design patterns in .NET Core, improving maintainability of medical scheduling and diagnostics systems.
+Executed meticulous testing of .NET Framework applications using XUnit, guaranteeing software reliability and accuracy in life-critical healthcare environments such as diagnostics, billing and prescription management.
+Integrated message queuing technologies like MSMQ to support real-time data communication between clinical systems, improving coordination across departments such as labs, pharmacy and patient admissions.
+Built interactive and user-centric interfaces using Angular 10, HTML, CSS, JavaScript, Bootstrap and TypeScript, enhancing usability for healthcare professionals by enabling responsive access to patient dashboards, medical forms and reporting tools.
+Consumed and exposed XML/JSON APIs, validating payloads with automated API testing frameworks to ensure reliability.
+Leveraged Blazor for internal forms management, enabling clinicians to capture diagnostics and prescriptions in real time.
+Ensured comprehensive testing using Karma and Jasmine for front-end validation and XUnit for back-end functionality, enhancing reliability of patient-care modules.
+Ensured the reliability and robustness of front-end applications by applying Karma testing to validate functionality and create a seamless end-user experience.
+Monitored Kubernetes workloads to maintain compliance and ensure reliability of clinical data pipelines.
+Developed and implemented RESTful Web Services to standardize data exchange processes, enhancing communication between systems and improving overall compatibility.
+Optimized database performance and reliability by employing SQL Server, ensuring smooth data storage, retrieval and management across various use cases.
+Partnered with Texas state healthcare agencies, aligning data models and reports to state-mandated standards.
+Applied advanced Entity Framework Core techniques to simplify database interactions, improving data flow efficiency and reducing complexity in large-scale systems.
+Delivered stable and efficient software by performing rigorous testing on .NET Framework projects using XUnit, ensuring smooth and error-free functionality.
+Managed source code effectively using Git, maintaining an organized and streamlined version control system for collaborative and transparent development workflows.
+Spearheaded CI/CD automation using Azure DevOps, significantly accelerating development cycles and deployment timelines for better project outcomes.
+Implemented secure API access controls using OAuth2 protocols, ensuring advanced authentication measures and robust data protection.
+Used Jira, Confluence, and Bitbucket for backlog tracking, sprint planning, and documentation in Agile projects.
+Built high-performance applications with ASP.NET Core Web API within a scalable Microservices architecture, addressing unique business needs with innovative solutions.
+Applied comprehensive knowledge of cloud platforms like Azure to design, deploy and manage advanced cloud-native applications aligned with specific project goals.
+Designed and developed backend modules using ASP.NET Core 2.0 Web API and Entity Framework Core to manage medical records, patient scheduling, and diagnostics data within a secure healthcare environment.
+
+Client: Comerica Bank, Dallas, TX                                                                                               	May 2017 - Dec 2019
+.Net Full Stack Developer
+
+Tasks & Roles:
+Expertly utilized the MVC architecture to develop well-structured, maintainable financial web applications, ensuring scalability and robustness for systems handling sensitive transactions, reporting and compliance workflows.
+Applied Angular routing and reactive forms to simplify workflows for compliance and transaction approvals.
+Showcased advanced proficiency in the .NET Framework, particularly with ASP.NET 4.6 MVC, delivering high-performance web solutions customized to support complex financial operations such as risk analysis, client onboarding and account management.
+Built reusable Angular services for client onboarding and account management, improving code maintainability.
+Supported DevOps team in setting up Docker images and Kubernetes manifests for ASP.NET MVC and Angular applications.
+Integrated Blazor with banking microservices to provide client account summaries in real time.
+Implemented ETL workflows for compliance and auditing, transporting and aggregating large datasets between SQL Server, Oracle, and MongoDB systems.
+Engineered RESTful services using C# and Entity Framework for secure handling of transaction data, and wrote complex PL/SQL scripts for Oracle-based reporting workflows.
+Leveraged Entity Framework for advanced Object-Relational Mapping, optimizing database interactions for secure handling of financial data, including transaction histories, audit logs and customer information.
+Designed and implemented SharePoint solutions with custom sites, lists, libraries web parts to improve collaboration, financial document management workflow automation.
+Developed initial proof-of-concept Blazor WebAssembly modules to explore modernizing ASP.NET MVC applications.
+Wrote and optimized T-SQL and PL/SQL stored procedures with dynamic SQL and exception handling to support complex financial reporting, risk analysis, and account management.
+Utilized JSON extensively for efficient and platform-independent data formatting, enabling real-time, lightweight communication between financial applications, APIs and third-party services.
+Engineered RESTful Web Services to standardize communication protocols, facilitating seamless integration across banking systems, payment gateways and regulatory platforms, thereby enhancing overall system interoperability and compliance support.
+Wrote and optimized T-SQL and PL/SQL stored procedures, employing dynamic SQL and robust error handling to support risk and compliance workflows.
+Built Blazor components for admin reporting interfaces, reducing reliance on third-party UI libraries.
+Developed dynamic, interactive and responsive user interfaces using technologies like ASP.NET MVC, Angular 5, HTML, CSS, JavaScript and Bootstrap, delivering exceptional user experiences.
+Seamlessly integrated Angular 5 with ASP.NET MVC, enabling the creation of dynamic, visually appealing interfaces that enhance functionality and user engagement.
+Integrated with XML and JSON APIs, developing secure middleware services for real-time reporting.
+Demonstrated versatility in database management by using SQL Server for structured data and MongoDB for unstructured data, ensuring efficient handling of diverse storage needs.
+Conducted meticulous testing of .NET Framework applications using XUnit, ensuring the delivery of reliable, robust and high-quality software solutions.
+Contributed to migration of banking apps toward containerized microservices, preparing workloads for Kubernetes adoption.
+Employed tools like Visual Studio and SQL Server Management Studio to streamline the software development lifecycle and optimize database performance.
+Applied Agile methodologies throughout project workflows, enabling adaptability to changing requirements, improving team productivity and ensuring successful project outcomes.
+Integrated advanced monitoring and logging tools into Azure DevOps YAML pipelines, capturing critical deployment metrics, application telemetry and security logs for better operational insights.
+Automated data aggregation processes to prepare regulatory and compliance reports, improving data accuracy and reducing turnaround time.
+Managed comprehensive project documentation using TFS, ensuring all artifacts, requirements and decisions were thoroughly documented for effective knowledge sharing and future reference.
+
+Client: Florida power and light, Juno Beach, FL                                                                    	Nov 2015 - Apr 2017
+.Net Developer
+
+Tasks & Roles:
+Optimized SQL Server views, stored procedures, and exception handling to enhance performance of SCADA, outage tracking, and load forecasting systems.
+Built interactive Presentation Layers with ASP.NET, integrating HTML, CSS, Web Controls and Web Forms using C# to deliver user-friendly portals for billing, outage tracking and consumption monitoring.
+Developed an efficient Data Access Layer with ADO.NET 3.5, enabling seamless database connectivity and using DataGrid and Datasets to present real-time SQL Server data for energy usage and grid status.
+Optimized complex SQL Server Views with advanced T-SQL joins to ensure fast, reliable data access for SCADA, load forecasting and reporting applications.
+Implemented robust backend logic with C#, supporting secure and high-performance operations in utility systems such as smart meter integrations and customer account services.
+Created insightful Power BI dashboards and reports, turning large energy datasets into actionable intelligence for operational efficiency and regulatory compliance.
+Developed centralized, reusable Master Pages for consistent web design, used DataGrid controls for dynamic data display delivered interactive management reports via SSRS.
+Engineered optimized Stored Procedures to handle complex database operations, significantly enhancing data processing and query performance.
+Developed ETL routines for integrating and processing large-scale energy consumption data from multiple sources into SQL Server for reporting and analytics.
+Leveraged Team Foundation Server (TFS) to manage projects effectively, ensuring organized workflows, reliable version control and seamless collaboration within cross-functional teams.
+Applied Agile SDLC and SCRUM methodologies to streamline project execution, enabling iterative development and fostering adaptability to evolving requirements.
+Conducted comprehensive automated testing of .NET applications using NUnit, ensuring a reliable, high-quality codebase through rigorous testing frameworks and practices.
+
+Client: IDT Corp., Newark, NJ                                                                                                     	Jan 2013 - Oct 2015 
+.Net Developer
+
+Tasks & Roles:
+Developed interactive and responsive front-end components using HTML, CSS, JavaScript and jQuery, delivering seamless user experiences across telecom customer self-service portals and service dashboards.
+Contributed to the successful adoption of Agile methodologies within the SDLC, supporting fast-paced, collaborative development cycles for telecom software initiatives.
+Created ETL data operations for telecom billing and usage tracking systems, ensuring reliable data movement between Oracle, SQL Server, and external partner systems.
+Participated in the design and development of scalable web applications using ASP.NET, C# and MVC, enhancing telecom functionalities such as account management, plan customization and service provisioning.
+Integrated third-party APIs and services into telecom platforms to expand service offerings such as international calling, number portability, and user authentication.
+Implemented role-based access control (RBAC) within ASP.NET applications to ensure secure access to sensitive user data and administrative modules.
+Assisted in building and maintaining SOAP Web Services, enabling secure and standardized communication across telecom platforms, billing systems and external service providers.
+Supported backend data operations using ADO.NET, optimizing query performance and ensuring reliable database interactions for core telecom services including usage tracking and customer billing.
+Leveraged AJAX to enhance web application performance, enabling real-time, asynchronous updates for a more responsive and interactive user experience.
+Contributed to comprehensive application testing using XUnit within the .NET Framework, ensuring code quality and reliability while gaining valuable insights into automated testing processes.
+Provided support for version control management through SVN, developing expertise in tracking code changes, managing repositories and fostering effective team collaboration.
+Created and maintained technical documentation for system architecture, API endpoints, and deployment processes to support knowledge sharing and system sustainability.
+Designed and tuned stored procedures, dynamic SQL, and error-handling logic to manage high-volume call records and customer data.
+
+Client: DLK Technologies, Bengaluru, IN	 Dec 2009– Aug 2012
+QA Analyst
+
+Tasks & Roles:
+Performed manual functional, integration, and regression testing for web-based applications, validating business workflows and UI components across multiple browsers and environments.
+Created and maintained test plans, test cases, and test scripts using HP Quality Center (QC), ensuring traceability between requirements, test scenarios, and defects.
+Performed backend data validation by writing and executing SQL queries on Oracle and SQL Server databases to confirm data accuracy during ETL migrations.
+Validated complex stored procedures, triggers, and exception handling logic as part of QA cycles for large-scale enterprise applications.
+Logged, tracked, and managed defects through Bugzilla and collaborated with developers to ensure timely resolution of critical and high-severity issues.
+Tested SOAP-based web services using SOAP UI, validating XML request/response structure, schema compliance, and backend integration logic
+Performed backend validation using SQL queries on Oracle and SQL Server databases to ensure data integrity and correctness of transactions across modules.
+Participated in requirement analysis and test case reviews, working closely with Business Analysts and Developers to identify gaps and ambiguities early in the SDLC.
+Prepared daily and weekly QA status reports using Excel and shared them with stakeholders, ensuring clear visibility into test progress, defect metrics, and risks
+
+
+Education
+
+Bachelors in Computer Science – SRM University - 2009

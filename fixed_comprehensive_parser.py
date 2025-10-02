@@ -123,6 +123,7 @@ class FixedComprehensiveParser:
             # Skills (4 fields + array)
             'ListOfSkills': skills,
             'TotalSkills': len(skills),  # Count of skills
+            'RelevantSkills': self._extract_relevant_skills(skills),  # Top skills by experience
 
             # Domain (1 field)
             'Domain': domains,
@@ -2540,7 +2541,150 @@ class FixedComprehensiveParser:
             if current_project:
                 projects.append(current_project)
 
+        # Strategy 2: Extract CLIENT-based projects from work experience
+        # Look for "Client: CompanyName, Location" format
+        if not projects:  # Only if no dedicated projects section found
+            projects = self._extract_client_projects_from_experience(text, lines)
+
         return projects
+
+    def _extract_client_projects_from_experience(self, text: str, lines: List[str]) -> List[Dict[str, Any]]:
+        """Extract projects from CLIENT-based work experience format"""
+        projects = []
+
+        # Find experience section first
+        exp_start = -1
+        for i, line in enumerate(lines):
+            line_upper = line.strip().upper()
+            if line_upper in ['EMPLOYMENT HISTORY', 'WORK EXPERIENCE', 'PROFESSIONAL EXPERIENCE', 'EXPERIENCE', 'EMPLOYMENT TIMELINE', 'CAREER HISTORY', 'WORK HISTORY', 'EXPERIENCE DETAILS', 'PROFESSIONAL HISTORY']:
+                exp_start = i
+                break
+
+        if exp_start == -1:
+            return projects
+
+        # Look for CLIENT: pattern in experience section
+        i = exp_start
+        while i < len(lines):
+            line = lines[i].strip()
+
+            # Check for "Client: CompanyName, Location<whitespace>Date Range" pattern
+            # Use a two-step approach:
+            # 1. Match "Client:" prefix and capture everything after it
+            # 2. Split by large whitespace/tabs to separate location from date range
+            # 3. Split company and location by comma
+            client_match = re.match(r'Client:\s*(.+)', line, re.IGNORECASE)
+
+            if client_match:
+                rest = client_match.group(1)
+
+                # Split by large whitespace or tabs to separate location from dates
+                parts = re.split(r'\s{2,}|\t+', rest)
+
+                company = ''
+                location = ''
+                date_range = ''
+
+                if len(parts) >= 2:
+                    # parts[0] = "Company, Location"
+                    # parts[-1] = "Date Range"
+                    company_location = parts[0]
+                    date_range = parts[-1]
+
+                    # Split company and location by comma
+                    if ',' in company_location:
+                        company_parts = company_location.split(',', 1)
+                        company = company_parts[0].strip()
+                        location = company_parts[1].strip()
+                    else:
+                        company = company_location.strip()
+                elif len(parts) == 1:
+                    # No date range, just company and maybe location
+                    company_location = parts[0]
+                    if ',' in company_location:
+                        company_parts = company_location.split(',', 1)
+                        company = company_parts[0].strip()
+                        location = company_parts[1].strip()
+                    else:
+                        company = company_location.strip()
+
+                # Extract start and end dates
+                start_date, end_date, is_current = self._parse_date_range(date_range)
+
+                # Next line should be job title/role
+                role = ''
+                description = ''
+                if i + 1 < len(lines):
+                    i += 1
+                    # Skip empty lines
+                    while i < len(lines) and not lines[i].strip():
+                        i += 1
+
+                    if i < len(lines):
+                        role = lines[i].strip()
+                        i += 1
+
+                        # Collect description lines until next Client: or section header
+                        desc_lines = []
+                        while i < len(lines):
+                            next_line = lines[i].strip()
+
+                            # Stop at next client or section header
+                            if (next_line.lower().startswith('client:') or
+                                next_line.upper() in ['EDUCATION', 'SKILLS', 'CERTIFICATIONS', 'PROFESSIONAL SUMMARY'] or
+                                (len(next_line) < 30 and next_line.isupper())):
+                                break
+
+                            if next_line:
+                                desc_lines.append(next_line)
+
+                            i += 1
+
+                        description = ' '.join(desc_lines[:10])  # Limit to first 10 lines
+
+                # Create project entry
+                project = {
+                    'ProjectName': f"{company} - {role}" if role else company,
+                    'Name': f"{company} - {role}" if role else company,
+                    'Description': description[:500] if description else '',  # Limit description
+                    'Role': role,
+                    'Client': company,
+                    'Company': company,
+                    'CompanyName': company,
+                    'StartDate': start_date,
+                    'EndDate': end_date,
+                    'Location': location,
+                    'Technologies': [],
+                    'TeamSize': ''
+                }
+                projects.append(project)
+
+            i += 1
+
+        return projects
+
+    def _parse_date_range(self, date_str: str) -> tuple:
+        """Parse date range string into start date, end date, and is_current flag"""
+        # Examples: "Sep 2022 - Till Date", "Jan 2020 - Aug 2022", "May 2017 - Dec 2019"
+        date_str = date_str.strip()
+
+        # Split by dash or en-dash
+        parts = re.split(r'\s*[-–]\s*', date_str)
+
+        if len(parts) == 2:
+            start = parts[0].strip()
+            end = parts[1].strip()
+
+            # Check if current
+            is_current = end.lower() in ['till date', 'present', 'current']
+
+            # Normalize end date
+            if is_current:
+                end = 'Current'
+
+            return (start, end, is_current)
+
+        return ('', '', False)
 
     def _extract_current_job_role(self, text: str, experiences: List[Dict[str, Any]]) -> str:
         """Extract current job role from resume header or most recent position"""
@@ -2929,7 +3073,50 @@ class FixedComprehensiveParser:
         """Extract comprehensive achievements information"""
         achievements = []
 
-        # Look for monetary values (achievements often include project costs, revenue, etc.)
+        # Strategy 1: Look for dedicated ACHIEVEMENTS section
+        lines = text.split('\n')
+        ach_start = -1
+        for i, line in enumerate(lines):
+            line_upper = line.strip().upper()
+            if line_upper in ['ACHIEVEMENTS', 'ACHIEVEMENT', 'ACCOMPLISHMENTS', 'ACCOMPLISHMENT', 'AWARDS', 'HONORS']:
+                ach_start = i
+                break
+
+        if ach_start != -1:
+            # Extract from dedicated section
+            section_headers = ['EXPERIENCE', 'EDUCATION', 'SKILLS', 'CERTIFICATIONS', 'PROJECTS']
+            ach_end = len(lines)
+            for i in range(ach_start + 1, len(lines)):
+                line_upper = lines[i].strip().upper()
+                if any(header in line_upper for header in section_headers) and len(line_upper) < 50:
+                    ach_end = i
+                    break
+
+            for i in range(ach_start + 1, ach_end):
+                line = lines[i].strip()
+                if not line:
+                    continue
+
+                # Remove bullets
+                line = re.sub(r'^[•\-\*]\s*', '', line)
+                line = re.sub(r'^[0-9]+\.\s*', '', line)
+
+                if len(line) > 20:
+                    # Extract company and date if present
+                    company_match = re.search(r'at\s+([A-Z][A-Za-z\s&]+?)(?:,|\.|$)', line)
+                    company = company_match.group(1).strip() if company_match else ''
+
+                    date_match = re.search(r'\b(19|20)\d{2}\b', line)
+                    date = date_match.group(0) if date_match else ''
+
+                    achievements.append({
+                        'Company': company if company else 'N/A',
+                        'Date': date if date else 'N/A',
+                        'Description': line[:300],
+                        'Value': ''
+                    })
+
+        # Strategy 2: Look for monetary values (achievements often include project costs, revenue, etc.)
         money_pattern = r'\$\s?([\d,]+(?:\.\d+)?)\s?(million|M|billion|B|k|K)?'
         money_matches = re.finditer(money_pattern, text, re.IGNORECASE)
 
@@ -3425,7 +3612,7 @@ class FixedComprehensiveParser:
             'PhoneNumber': phone,
             'CountryCode': country_code,
             'Location': location,
-            'SocialMediaLinks': []  # BRD-required field
+            'SocialMediaLinks': contact_info.get('SocialMedia', [])  # Copy social media links
         }
 
     def _convert_experience_to_list_format(self, experience: List[Dict[str, Any]], raw_text: str = '') -> List[Dict[str, Any]]:
@@ -3692,3 +3879,29 @@ class FixedComprehensiveParser:
 
         # Limit to top 5 achievements
         return achievements[:5]
+
+    def _extract_relevant_skills(self, skills: List[Dict[str, Any]]) -> List[str]:
+        """Extract relevant/top skills based on experience months"""
+        if not skills:
+            return []
+
+        # Sort skills by experience months (descending)
+        sorted_skills = sorted(skills, key=lambda x: x.get('ExperienceInMonths', 0), reverse=True)
+
+        # Return top skills (skill names only) - limit to top 10 or skills with 12+ months experience
+        relevant = []
+        for skill in sorted_skills:
+            # Try both 'SkillName' and 'Name' fields for compatibility
+            skill_name = skill.get('SkillName', '') or skill.get('Name', '')
+            exp_months = skill.get('ExperienceInMonths', 0)
+
+            # Include if in top 10 or has 12+ months experience
+            if len(relevant) < 10 or exp_months >= 12:
+                if skill_name and skill_name not in relevant:
+                    relevant.append(skill_name)
+
+            # Cap at 15 skills
+            if len(relevant) >= 15:
+                break
+
+        return relevant
